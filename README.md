@@ -4,6 +4,27 @@
 
 ---
 
+## Project Status
+
+> **Phase 1 Scaffolding — COMPLETE** *(April 2026)*
+
+All application code, configuration, and infrastructure files have been implemented. The full backend, frontend, and DevOps scaffolding is committed to the `master` branch and ready for environment bring-up.
+
+| Layer | Status | Notes |
+|---|---|---|
+| Backend (FastAPI, SQLAlchemy, Redis) | ✅ Complete | Models, schemas, services, security, API routes, tests |
+| Frontend (React 18, Vite 5, Zustand) | ✅ Complete | Pages, components, hooks, stores, services |
+| AI Pipeline (Whisper → GPT-4o → TTS) | ✅ Complete | `ai_orchestrator.py`, `state_machine.py`, prompts, personas |
+| Security Hardening | ✅ Complete | JWT auth, input sanitizer, rate limiter, jailbreak blocklist |
+| Admin Dashboard | ✅ Complete | Stats, participant table, reminder panel, response viewer |
+| Docker Compose (dev + prod) | ✅ Complete | PostgreSQL 16, Redis 7, Nginx, 4-worker Uvicorn |
+| CI/CD (GitHub Actions) | ✅ Complete | PR lint/test gate + GHCR push + SSH deploy |
+| Copilot Instructions | ✅ Complete | Backend, frontend, security, voice-pipeline instruction files |
+
+**Next steps:** run `003_setup` to install dependencies, copy `.env.example` → `.env`, then `004_run` to bring up the full stack.
+
+---
+
 ## Table of Contents
 
 1. [Project Overview](#1-project-overview)

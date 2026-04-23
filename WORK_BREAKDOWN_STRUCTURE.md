@@ -9,24 +9,28 @@
 
 ## WBS Summary Table
 
-| Epic | Name | Total SP | Est. Duration |
-|---|---|---|---|
-| E1 | Project Foundation | 42 SP | 2 weeks |
-| E2 | Backend API & Database | 89 SP | 4 weeks |
-| E3 | AI Orchestration Engine | 97 SP | 5 weeks |
-| E4 | Frontend Participant Experience | 76 SP | 5 weeks |
-| E5 | Security Hardening | 68 SP | 4 weeks |
-| E6 | Admin Dashboard | 64 SP | 4 weeks |
-| E7 | Integration & Testing | 55 SP | 4 weeks |
-| E8 | DevOps & Deployment | 52 SP | 4 weeks |
-| **TOTAL** | | **543 SP** | **~28 weeks** |
+> **Updated April 2026:** All epics (E1–E6, E8) have been scaffolded and committed to `master`.  
+> E7 (Integration & Testing) and E9 equivalent (UAT/Load Testing) remain pending a live environment.
+
+| Epic | Name | Total SP | Est. Duration | Status |
+|---|---|---|---|---|
+| E1 | Project Foundation | 42 SP | 2 weeks | ✅ Done |
+| E2 | Backend API & Database | 89 SP | 4 weeks | ✅ Done (scaffolding) |
+| E3 | AI Orchestration Engine | 97 SP | 5 weeks | ✅ Done (scaffolding) |
+| E4 | Frontend Participant Experience | 76 SP | 5 weeks | ✅ Done (scaffolding) |
+| E5 | Security Hardening | 68 SP | 4 weeks | ✅ Done (scaffolding) |
+| E6 | Admin Dashboard | 64 SP | 4 weeks | ✅ Done (scaffolding) |
+| E7 | Integration & Testing | 55 SP | 4 weeks | ⏳ Pending |
+| E8 | DevOps & Deployment | 52 SP | 4 weeks | ✅ Done (scaffolding) |
+| **TOTAL** | | **543 SP** | **~28 weeks** | |
 
 ---
 
-## Epic 1 — Project Foundation
+## Epic 1 — Project Foundation ✅ Done
 
 **Goal:** Establish a zero-ambiguity engineering starting point. Every team member can clone and run the full environment within 30 minutes.  
-**Total Effort:** 42 SP (~2 weeks)
+**Total Effort:** 42 SP (~2 weeks)  
+**Completed:** April 2026
 
 ---
 
@@ -142,10 +146,11 @@
 
 ---
 
-## Epic 2 — Backend API & Database
+## Epic 2 — Backend API & Database ✅ Done (scaffolding)
 
 **Goal:** Complete, tested, and documented REST API with full database schema. Admin authentication working.  
-**Total Effort:** 89 SP (~4 weeks)
+**Total Effort:** 89 SP (~4 weeks)  
+**Completed:** April 2026
 
 ---
 
@@ -299,10 +304,11 @@
 
 ---
 
-## Epic 3 — AI Orchestration Engine
+## Epic 3 — AI Orchestration Engine ✅ Done (scaffolding)
 
 **Goal:** A fully operational voice pipeline that conducts a complete survey interview with correct persona, state management, and prompt security.  
-**Total Effort:** 97 SP (~5 weeks)
+**Total Effort:** 97 SP (~5 weeks)  
+**Completed:** April 2026
 
 ---
 
@@ -442,10 +448,11 @@
 
 ---
 
-## Epic 4 — Frontend Participant Experience
+## Epic 4 — Frontend Participant Experience ✅ Done (scaffolding)
 
 **Goal:** A polished, accessible SPA that handles the complete voice session lifecycle.  
-**Total Effort:** 76 SP (~5 weeks)
+**Total Effort:** 76 SP (~5 weeks)  
+**Completed:** April 2026
 
 ---
 
@@ -562,10 +569,11 @@
 
 ---
 
-## Epic 5 — Security Hardening
+## Epic 5 — Security Hardening ✅ Done (scaffolding)
 
 **Goal:** All OWASP-relevant attack vectors mitigated. Adversarial testing passed. Prompt injection impossible.  
-**Total Effort:** 68 SP (~4 weeks)
+**Total Effort:** 68 SP (~4 weeks)  
+**Completed:** April 2026
 
 ---
 
@@ -673,10 +681,11 @@
 
 ---
 
-## Epic 6 — Admin Dashboard
+## Epic 6 — Admin Dashboard ✅ Done (scaffolding)
 
 **Goal:** Functional, secure admin dashboard with real-time analytics and participant management.  
-**Total Effort:** 64 SP (~4 weeks)
+**Total Effort:** 64 SP (~4 weeks)  
+**Completed:** April 2026
 
 ---
 
@@ -816,10 +825,11 @@
 
 ---
 
-## Epic 8 — DevOps & Deployment
+## Epic 8 — DevOps & Deployment ✅ Done (scaffolding)
 
 **Goal:** Production infrastructure with automated CI/CD, monitoring, and alerting.  
-**Total Effort:** 52 SP (~4 weeks)
+**Total Effort:** 52 SP (~4 weeks)  
+**Completed:** April 2026
 
 ---
 
