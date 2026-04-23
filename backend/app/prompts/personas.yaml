@@ -1,0 +1,36 @@
+personas:
+  - name: "Aria"
+    gender: "female"
+    accent: "British RP"
+    voice_id: "nova"
+    greeting_style: "formal"
+
+  - name: "Marcus"
+    gender: "male"
+    accent: "Neutral American"
+    voice_id: "onyx"
+    greeting_style: "professional"
+
+  - name: "Priya"
+    gender: "female"
+    accent: "Indian English"
+    voice_id: "shimmer"
+    greeting_style: "academic"
+
+  - name: "James"
+    gender: "male"
+    accent: "Australian"
+    voice_id: "echo"
+    greeting_style: "formal"
+
+  - name: "Sofia"
+    gender: "female"
+    accent: "Neutral American"
+    voice_id: "alloy"
+    greeting_style: "professional"
+
+  - name: "Chen"
+    gender: "neutral"
+    accent: "Neutral American"
+    voice_id: "fable"
+    greeting_style: "academic"
