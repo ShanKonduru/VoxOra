@@ -1,0 +1,8 @@
+# Root-level requirements — references the backend package list.
+# Install from the backend directory for the actual application:
+#   cd backend && pip install -r requirements.txt
+#
+# This file mirrors the backend dependencies for convenience
+# (e.g., IDE indexing, top-level tooling).
+
+-r backend/requirements.txt

@@ -1,13 +1,29 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# ============================================================
+# 005_run_test.sh  --  Lint + test the backend
+# Runs: ruff check, black --check, pytest --cov
+# ============================================================
 
-PYTHON=".venv/bin/python"
-
-if [ ! -f "$PYTHON" ]; then
-    echo "[ERROR] Virtual environment not found. Run 001_env.sh and 003_setup.sh first."
+if [ ! -f ".venv/bin/python" ]; then
+    echo "[ERROR] Virtual environment not found. Run 001_env.sh and source 002_activate.sh first."
     exit 1
 fi
 
 export PYTHONUTF8=1
-echo "Running tests..."
-"$PYTHON" -m pytest tests/ -v
+cd backend
+
+echo "=== Ruff Lint Check ==="
+ruff check .
+
+echo ""
+echo "=== Black Format Check ==="
+black --check .
+
+echo ""
+echo "=== Running Tests with Coverage ==="
+python -m pytest --cov=app tests/ -q
+
+cd ..
+echo ""
+echo "=== All checks passed ==="
