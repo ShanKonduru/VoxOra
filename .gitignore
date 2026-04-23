@@ -199,6 +199,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# ── Security audit artifacts (generated, not source) ─────────────────────────
+audit.json
+audit-workspace.json
+security_report.html
+/mcp.json
+
 # ── Docker ────────────────────────────────────────────────────────────────────
 docker-compose.override.yml
 

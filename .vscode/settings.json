@@ -32,6 +32,8 @@
         "/^cd c:\\\\MyProjects\\\\VoxOra\\\\backend ; python -m pytest --version 2>&1 ; python -c \"import sqlalchemy; print\\(sqlalchemy\\.__version__\\)\" 2>&1$/": {
             "approve": true,
             "matchCommandLine": true
-        }
+        },
+        "git -C c:\\MyProjects\\VoxOra": true,
+        "c:\\MyProjects\\VoxOra\\.venv\\Scripts\\python.exe": true
     }
 }

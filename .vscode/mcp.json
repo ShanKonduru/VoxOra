@@ -1,0 +1,12 @@
+{
+	"servers": {
+		"pip-audit-html": {
+			"type": "stdio",
+			"command": "${workspaceFolder}/.venv/Scripts/pip-audit-html-mcp.exe",
+			"env": {
+				"PIP_AUDIT_HTML_TIMEOUT_SECONDS": "600"
+			},
+			"cwd": "${workspaceFolder}"
+		}
+	}
+}
