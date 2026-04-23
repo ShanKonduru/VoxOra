@@ -13,6 +13,10 @@ fi
 export PYTHONUTF8=1
 cd backend
 
+echo "=== Installing dependencies ==="
+python -m pip install -r requirements-dev.txt -q
+
+echo ""
 echo "=== Ruff Lint Check ==="
 ruff check .
 

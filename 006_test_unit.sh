@@ -11,5 +11,11 @@ fi
 
 export PYTHONUTF8=1
 cd backend
+
+echo "=== Installing dependencies ==="
+python -m pip install -r requirements-dev.txt -q
+
+echo ""
+echo "=== Running Unit Tests ==="
 python -m pytest tests/unit/ -v --cov=app --cov-report=term-missing
 cd ..

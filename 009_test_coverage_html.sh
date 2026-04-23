@@ -12,6 +12,12 @@ fi
 
 export PYTHONUTF8=1
 cd backend
+
+echo "=== Installing dependencies ==="
+python -m pip install -r requirements-dev.txt -q
+
+echo ""
+echo "=== Running All Tests with HTML Coverage ==="
 python -m pytest tests/ --cov=app --cov-report=term-missing --cov-report=html -q
 cd ..
 
