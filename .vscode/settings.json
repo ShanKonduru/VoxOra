@@ -1,0 +1,37 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        ".\\.venv\\Scripts\\Activate.ps1": true,
+        "c:\\MyProjects\\VoxOra\\.venv\\Scripts\\Activate.ps1": true,
+        "Set-ExecutionPolicy": true,
+        "pip": true,
+        "pytest": true,
+        "/^cd c:\\\\MyProjects\\\\VoxOra\\\\backend ; python -c \"import sys; print\\(sys\\.executable\\)\" ; python -m pytest --version$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd c:\\\\MyProjects\\\\VoxOra\\\\backend ; python -m pip install -r requirements-dev\\.txt$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd c:\\\\MyProjects\\\\VoxOra\\\\backend ; python -m pytest --version 2>&1$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd c:\\\\MyProjects\\\\VoxOra\\\\backend ; python -m pytest --version$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd c:\\\\MyProjects\\\\VoxOra\\\\backend ; python -m pip install pytest pytest-asyncio pytest-cov httpx aiosqlite sqlalchemy fastapi pydantic-settings python-jose passlib aiosmtplib openai slowapi 2>&1 \\| Select-String -Pattern \"Successfully installed\\|already satisfied\\|ERROR\" \\| Select-Object -Last 10$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^python -m pytest --version ; python -c \"import sqlalchemy; print\\('sqlalchemy', sqlalchemy\\.__version__\\)\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd c:\\\\MyProjects\\\\VoxOra\\\\backend ; python -m pytest --version 2>&1 ; python -c \"import sqlalchemy; print\\(sqlalchemy\\.__version__\\)\" 2>&1$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
