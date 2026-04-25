@@ -420,6 +420,69 @@ The frontend `SurveyPage` receives `sessionData` and could display the participa
 
 ---
 
+## Part 7 — Validation Update (April 25, 2026)
+
+> **Purpose:** Re-verify high-severity findings against current workspace code after the initial April 23 report.
+
+### 7.1 Confirmed Criticals Still Open
+
+1. **Router prefix duplication is broader than auth only (Critical)**  
+    In addition to `auth`, the same prefix-on-router + prefix-on-include pattern exists for `sessions`, `surveys`, `participants`, and `admin`. Effective paths become doubled (e.g., `/api/sessions/api/sessions/init`).
+
+2. **`Session` field mismatch remains (Critical)**  
+    `Session` model defines `started_at`, while API code still references `created_at` in session/admin flows.
+
+3. **`SessionInitResponse` required fields still omitted (Critical)**  
+    `current_question_index` and `state` are still required by schema and still missing from `init_session` response payload.
+
+4. **WebSocket response logging still omits non-null `question_index` (Critical)**  
+    `responses.question_index` is required; insert payload still does not set it.
+
+5. **Refresh endpoint still does not read httpOnly refresh cookie (Critical)**  
+    `/api/auth/refresh` still expects `refresh_token` in function signature rather than extracting `voxora_refresh` cookie.
+
+### 7.2 Findings Corrected Since Initial Report
+
+1. **BUG-05 is now stale / resolved**  
+    `sample_participant` fixture is present in `backend/tests/conftest.py`; this part of the report is no longer accurate.
+
+### 7.3 Additional Confirmed Gaps (Noted During Re-Validation)
+
+1. **No route-level `@limiter.limit(...)` decorators found**  
+    Limiter middleware is registered, but endpoint decorators are still absent.
+
+2. **Alembic versions directory still scaffold-only**  
+    `backend/alembic/versions/` contains only `.gitkeep`.
+
+3. **Refresh-token hash persistence/revocation still not implemented**  
+    `hash_token()` exists but is not wired to persisted token state and revocation checks.
+
+4. **Frontend test coverage gap remains**  
+    CI currently runs frontend build only; no frontend test files were found in `frontend/src/` and no test step is present in frontend CI job.
+
+5. **CI trigger mismatch remains**  
+    Pull request workflow still triggers on `main` only, not `develop`.
+
+### 7.4 Test/Execution Environment Note
+
+During re-validation, backend integration test execution was blocked by missing runtime dependency in the active environment:
+
+- `ModuleNotFoundError: No module named 'redis'` while importing `app.database` through pytest `conftest.py`.
+
+This is an environment readiness issue and should be resolved before using test pass/fail as a gating signal for closure.
+
+### 7.5 Revised Immediate Priority (Execution Order)
+
+1. Normalize router prefix strategy (single source of truth for all API routers).
+2. Fix session schema/field mismatches (`created_at` vs `started_at`; response contract alignment).
+3. Fix `/api/auth/refresh` cookie extraction and token refresh flow.
+4. Fix WebSocket response persistence (`question_index`).
+5. Add route-level rate-limit decorators for exposed write endpoints.
+6. Restore test environment dependencies (`redis`, etc.) and re-run focused integration tests.
+
+
+---
+
 ## Part 5 — Summary Table
 
 | ID | Category | Severity | Component | Status |

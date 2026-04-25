@@ -31,4 +31,4 @@ pyyaml==6.0.1
 aiosmtplib==3.0.1
 
 # ── MCP (Model Context Protocol) ───────────────────────────────────────────────
-pip-audit-html[mcp]>=0.1.5
+pip-audit-html[mcp]==0.1.9
