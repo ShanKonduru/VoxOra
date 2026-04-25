@@ -497,7 +497,7 @@ Deleting question at index 2 from a [1, 2, 3, 4] sequence leaves [1, 3, 4]. The 
 
 ---
 
-### IS-15 🔴 Implement Redis WebSocket connection registry
+### IS-15 🟢 Implement Redis WebSocket connection registry
 
 **Gap ref:** FEAT-09  
 **Labels:** `feature` `medium` `backend` `infrastructure`  
@@ -512,16 +512,16 @@ Deleting question at index 2 from a [1, 2, 3, 4] sequence leaves [1, 3, 4]. The 
 IS-09 (per-IP limit) and general session monitoring both depend on a registry. Currently no Redis keys track active WS connections.
 
 #### Acceptance Criteria
-- [ ] On WebSocket accept: Redis key `ws_connections:{ip_address}` is incremented via `INCR` with a TTL of `SESSION_STATE_TTL + 60` seconds
-- [ ] On WebSocket close (both graceful and disconnect): the counter is decremented (floor at 0)
-- [ ] Counter is shared across processes (Redis, not in-memory)
-- [ ] IS-09 reads from this same counter
+- [x] On WebSocket accept: Redis key `ws_connections:{ip_address}` is incremented via `INCR` with a TTL of `SESSION_STATE_TTL + 60` seconds
+- [x] On WebSocket close (both graceful and disconnect): the counter is decremented (floor at 0)
+- [x] Counter is shared across processes (Redis, not in-memory)
+- [x] IS-09 reads from this same counter
 
 #### Tasks
-- [ ] **T1** — Extract client IP in the WebSocket handler (from `websocket.headers.get("x-forwarded-for")` or `websocket.client.host`)
-- [ ] **T2** — After `websocket.accept()`: `await redis.incr(f"ws_connections:{client_ip}")`; set TTL if this is the first connection
-- [ ] **T3** — In all exit paths (normal close, `WebSocketDisconnect`, exception): `await redis.decr(f"ws_connections:{client_ip}")`
-- [ ] **T4** — Link IS-09 to read from this counter for the limit check (coordinate implementation)
+- [x] **T1** — Extract client IP in the WebSocket handler (from `websocket.headers.get("x-forwarded-for")` or `websocket.client.host`)
+- [x] **T2** — After `websocket.accept()`: `await redis.incr(f"ws_connections:{client_ip}")`; set TTL if this is the first connection
+- [x] **T3** — In all exit paths (normal close, `WebSocketDisconnect`, exception): `await redis.decr(f"ws_connections:{client_ip}")`
+- [x] **T4** — Link IS-09 to read from this counter for the limit check (coordinate implementation)
 
 **Files:** `backend/app/api/websocket.py`
 
@@ -942,7 +942,7 @@ IS-09 (per-IP limit) and general session monitoring both depend on a registry. C
 | IS-12 | Implement PUT /questions/{q_id} endpoint | Feature | Medium | M4 | 🟢 Done |
 | IS-13 | Implement question order rebalancing on delete | Feature | Medium | M4 | 🟢 Done |
 | IS-14 | Wire recent-persona DB query in session init | Feature | Medium | M4 | 🟢 Done |
-| IS-15 | Implement Redis WebSocket connection registry | Feature | Medium | M4 | 🔴 Open |
+| IS-15 | Implement Redis WebSocket connection registry | Feature | Medium | M4 | 🟢 Done |
 | IS-16 | Implement Whisper confidence threshold re-ask | Feature | Medium | M4 | 🔴 Open |
 | IS-17 | Add frontend unit and component tests | Testing | Medium | M5 | 🔴 Open |
 | IS-18 | Implement audio storage (S3/object store) | Feature | Medium | M4 | 🔴 Open |

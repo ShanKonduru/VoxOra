@@ -27,7 +27,7 @@ from app.security.auth import decode_token
 from app.security.input_sanitizer import input_sanitizer
 from app.services.ai_orchestrator import orchestrator_service
 from app.services.moderation import moderation_service
-from app.services.state_machine import SessionState, SurveyStateMachine
+from app.services.state_machine import SESSION_STATE_TTL, SessionState, SurveyStateMachine
 from app.config import settings as _settings
 
 logger = logging.getLogger(__name__)
@@ -38,6 +38,21 @@ _MSG_AUDIO = "audio"
 _MSG_CONTROL = "control"
 
 _WS_CONN_KEY = "ws_connections:{ip}"
+_WS_CONN_TTL_SECONDS = SESSION_STATE_TTL + 60
+
+
+def _extract_client_ip(websocket: WebSocket) -> str:
+    """Resolve client IP from proxy headers first, then socket metadata."""
+    forwarded_for = websocket.headers.get("x-forwarded-for", "")
+    if forwarded_for:
+        first_hop = forwarded_for.split(",", 1)[0].strip()
+        if first_hop:
+            return first_hop
+
+    if websocket.client and websocket.client.host:
+        return websocket.client.host
+
+    return "unknown"
 
 
 async def _acquire_ws_slot(ip: str) -> tuple[bool, object]:
@@ -46,7 +61,8 @@ async def _acquire_ws_slot(ip: str) -> tuple[bool, object]:
         redis = await get_redis()
         key = _WS_CONN_KEY.format(ip=ip)
         count = await redis.incr(key)
-        await redis.expire(key, 3600)  # safety TTL — clears stale counts after 1 hour
+        if count == 1:
+            await redis.expire(key, _WS_CONN_TTL_SECONDS)
         if count > _settings.max_ws_connections_per_ip:
             await redis.decr(key)
             return False, redis
@@ -94,7 +110,7 @@ async def _load_session(
 async def voice_session_ws(websocket: WebSocket, session_id: uuid.UUID) -> None:
     await websocket.accept()
 
-    client_ip = websocket.client.host if websocket.client else "unknown"
+    client_ip = _extract_client_ip(websocket)
     allowed, ws_redis = await _acquire_ws_slot(client_ip)
     if not allowed:
         await websocket.close(code=1008)

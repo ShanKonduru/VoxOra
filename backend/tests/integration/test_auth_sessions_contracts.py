@@ -5,6 +5,7 @@ import inspect
 from unittest.mock import AsyncMock
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
+from starlette.datastructures import Headers
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -849,6 +850,7 @@ def test_ws_acquire_slot_enforces_limit_in_source() -> None:
 @pytest.mark.asyncio
 async def test_acquire_ws_slot_blocks_over_limit(monkeypatch: pytest.MonkeyPatch) -> None:
     counter = {"count": 0}
+    expire_calls: list[tuple[str, int]] = []
 
     class _FakeRedisCounter:
         async def incr(self, key: str) -> int:
@@ -856,7 +858,7 @@ async def test_acquire_ws_slot_blocks_over_limit(monkeypatch: pytest.MonkeyPatch
             return counter["count"]
 
         async def expire(self, key: str, ttl: int) -> None:
-            pass
+            expire_calls.append((key, ttl))
 
         async def decr(self, key: str) -> int:
             counter["count"] = max(0, counter["count"] - 1)
@@ -869,7 +871,7 @@ async def test_acquire_ws_slot_blocks_over_limit(monkeypatch: pytest.MonkeyPatch
     monkeypatch.setattr("app.api.websocket.get_redis", AsyncMock(return_value=fake_redis))
     monkeypatch.setattr("app.api.websocket._settings.max_ws_connections_per_ip", 2)
 
-    from app.api.websocket import _acquire_ws_slot, _release_ws_slot
+    from app.api.websocket import _WS_CONN_TTL_SECONDS, _acquire_ws_slot, _release_ws_slot
 
     allowed1, r1 = await _acquire_ws_slot("1.2.3.4")
     allowed2, r2 = await _acquire_ws_slot("1.2.3.4")
@@ -879,11 +881,34 @@ async def test_acquire_ws_slot_blocks_over_limit(monkeypatch: pytest.MonkeyPatch
     assert allowed2 is True
     assert allowed3 is False
     assert counter["count"] == 2  # decr called after rejection, back to 2
+    assert expire_calls == [("ws_connections:1.2.3.4", _WS_CONN_TTL_SECONDS)]
 
     # Release one and confirm a new slot opens
     await _release_ws_slot(r1, "1.2.3.4")
     allowed4, _ = await _acquire_ws_slot("1.2.3.4")
     assert allowed4 is True
+
+
+def test_extract_client_ip_prefers_x_forwarded_for() -> None:
+    from app.api.websocket import _extract_client_ip
+
+    fake_ws = SimpleNamespace(
+        headers=Headers({"x-forwarded-for": "203.0.113.10, 10.0.0.5"}),
+        client=SimpleNamespace(host="10.0.0.5"),
+    )
+
+    assert _extract_client_ip(fake_ws) == "203.0.113.10"
+
+
+def test_extract_client_ip_falls_back_to_client_host() -> None:
+    from app.api.websocket import _extract_client_ip
+
+    fake_ws = SimpleNamespace(
+        headers=Headers({}),
+        client=SimpleNamespace(host="192.0.2.7"),
+    )
+
+    assert _extract_client_ip(fake_ws) == "192.0.2.7"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
