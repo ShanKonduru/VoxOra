@@ -34,6 +34,7 @@
             "matchCommandLine": true
         },
         "git -C c:\\MyProjects\\VoxOra": true,
-        "c:\\MyProjects\\VoxOra\\.venv\\Scripts\\python.exe": true
+        "c:\\MyProjects\\VoxOra\\.venv\\Scripts\\python.exe": true,
+        "..\\.venv\\Scripts\\python.exe": true
     }
 }
