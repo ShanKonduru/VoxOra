@@ -527,7 +527,7 @@ IS-09 (per-IP limit) and general session monitoring both depend on a registry. C
 
 ---
 
-### IS-16 🔴 Implement Whisper confidence threshold with re-ask logic
+### IS-16 🟢 Implement Whisper confidence threshold with re-ask logic
 
 **Gap ref:** FEAT-10  
 **Labels:** `feature` `medium` `backend`  
@@ -542,18 +542,18 @@ IS-09 (per-IP limit) and general session monitoring both depend on a registry. C
 `transcribe()` uses `response_format="text"`, which returns a plain string with no confidence data. Confidence-based re-ask requires `response_format="verbose_json"` to obtain per-segment confidence scores.
 
 #### Acceptance Criteria
-- [ ] Transcriptions with average confidence < 0.70 trigger a re-ask using `get_repeat_request()`
-- [ ] Up to 3 re-ask attempts are made before the question is skipped
-- [ ] The confidence score is logged to `Response.sentiment_score` (or a dedicated field) for quality analysis
-- [ ] Transcriptions with no audio (empty segments) are still caught by the existing empty-transcript check
+- [x] Transcriptions with average confidence < 0.70 trigger a re-ask using `get_repeat_request()`
+- [x] Up to 3 re-ask attempts are made before the question is skipped
+- [x] The confidence score is logged to `Response.sentiment_score` (or a dedicated field) for quality analysis
+- [x] Transcriptions with no audio (empty segments) are still caught by the existing empty-transcript check
 
 #### Tasks
-- [ ] **T1** — Change `response_format="text"` → `response_format="verbose_json"` in `ai_orchestrator.transcribe()`
-- [ ] **T2** — Parse `response.segments` to calculate average `avg_logprob` (Whisper's confidence proxy); convert to 0–1 range: `confidence = min(1.0, max(0.0, 1 + avg_logprob / 5))`
-- [ ] **T3** — Return `(transcript: str, confidence: float)` tuple from `transcribe()`
-- [ ] **T4** — In `websocket.py` turn loop: if `confidence < settings.whisper_confidence_threshold` (default 0.70), send re-ask audio and `continue`
-- [ ] **T5** — Add `whisper_confidence_threshold: float = 0.70` to `Settings`
-- [ ] **T6** — Write unit tests for confidence calculation at boundary values (0.0, 0.69, 0.70, 1.0)
+- [x] **T1** — Change `response_format="text"` → `response_format="verbose_json"` in `ai_orchestrator.transcribe()`
+- [x] **T2** — Parse `response.segments` to calculate average `avg_logprob` (Whisper's confidence proxy); convert to 0–1 range: `confidence = min(1.0, max(0.0, 1 + avg_logprob / 5))`
+- [x] **T3** — Return `(transcript: str, confidence: float)` tuple from `transcribe()`
+- [x] **T4** — In `websocket.py` turn loop: if `confidence < settings.whisper_confidence_threshold` (default 0.70), send re-ask audio and `continue`
+- [x] **T5** — Add `whisper_confidence_threshold: float = 0.70` to `Settings`
+- [x] **T6** — Write unit tests for confidence calculation at boundary values (0.0, 0.69, 0.70, 1.0)
 
 **Files:** `backend/app/services/ai_orchestrator.py`, `backend/app/api/websocket.py`, `backend/app/config.py`
 
@@ -943,7 +943,7 @@ IS-09 (per-IP limit) and general session monitoring both depend on a registry. C
 | IS-13 | Implement question order rebalancing on delete | Feature | Medium | M4 | 🟢 Done |
 | IS-14 | Wire recent-persona DB query in session init | Feature | Medium | M4 | 🟢 Done |
 | IS-15 | Implement Redis WebSocket connection registry | Feature | Medium | M4 | 🟢 Done |
-| IS-16 | Implement Whisper confidence threshold re-ask | Feature | Medium | M4 | 🔴 Open |
+| IS-16 | Implement Whisper confidence threshold re-ask | Feature | Medium | M4 | 🟢 Done |
 | IS-17 | Add frontend unit and component tests | Testing | Medium | M5 | 🔴 Open |
 | IS-18 | Implement audio storage (S3/object store) | Feature | Medium | M4 | 🔴 Open |
 | IS-19 | Implement sentiment analysis on responses | Feature | Low | M4 | 🔴 Open |

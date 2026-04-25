@@ -911,6 +911,16 @@ def test_extract_client_ip_falls_back_to_client_host() -> None:
     assert _extract_client_ip(fake_ws) == "192.0.2.7"
 
 
+def test_is16_confidence_pipeline_present_in_source() -> None:
+    ws_source = inspect.getsource(websocket_module.voice_session_ws)
+    stt_source = inspect.getsource(websocket_module.orchestrator_service.transcribe)
+
+    assert "whisper_confidence_threshold" in ws_source
+    assert "low_confidence_reasks" in ws_source
+    assert "sentiment_score=Decimal(" in ws_source
+    assert 'response_format="verbose_json"' in stt_source
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # IS-12: PUT /api/surveys/{id}/questions/{q_id}
 # IS-13: Question order rebalancing on delete

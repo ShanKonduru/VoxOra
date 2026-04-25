@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import uuid
+from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, WebSocketException, status
@@ -182,6 +183,7 @@ async def voice_session_ws(websocket: WebSocket, session_id: uuid.UUID) -> None:
             await sm.save(redis)
 
             refocus_count = 0
+            low_confidence_reasks = 0
 
             try:
                 while not sm.is_terminal():
@@ -198,7 +200,7 @@ async def voice_session_ws(websocket: WebSocket, session_id: uuid.UUID) -> None:
 
                         # 1. Transcribe
                         try:
-                            transcript = await orchestrator_service.transcribe(audio_bytes)
+                            transcript, confidence = await orchestrator_service.transcribe(audio_bytes)
                         except Exception as exc:
                             logger.warning("STT failed: %s", exc)
                             repeat_audio = await orchestrator_service.synthesize_speech(
@@ -208,6 +210,35 @@ async def voice_session_ws(websocket: WebSocket, session_id: uuid.UUID) -> None:
                             sm.transition(SessionState.ASKING)
                             await sm.save(redis)
                             continue
+
+                        # Low-confidence transcript: re-ask up to 3 times, then skip.
+                        if confidence < _settings.whisper_confidence_threshold:
+                            low_confidence_reasks += 1
+                            if low_confidence_reasks >= 3:
+                                low_confidence_reasks = 0
+                                skip_audio = await orchestrator_service.synthesize_speech(
+                                    get_skip_message(), voice_id=persona.voice_id
+                                )
+                                await websocket.send_bytes(skip_audio)
+                                has_more = sm.skip_question()
+                                await sm.save(redis)
+                                if not has_more:
+                                    break
+                                await websocket.send_text(_build_control("question", {
+                                    "question_index": sm.current_question_index,
+                                    "question_text": questions[sm.current_question_index].question_text,
+                                    "total": len(questions),
+                                }))
+                            else:
+                                repeat_audio = await orchestrator_service.synthesize_speech(
+                                    get_repeat_request(), voice_id=persona.voice_id
+                                )
+                                await websocket.send_bytes(repeat_audio)
+                                sm.transition(SessionState.ASKING)
+                                await sm.save(redis)
+                            continue
+
+                        low_confidence_reasks = 0
 
                         if not transcript.strip():
                             repeat_audio = await orchestrator_service.synthesize_speech(
@@ -290,6 +321,7 @@ async def voice_session_ws(websocket: WebSocket, session_id: uuid.UUID) -> None:
                             question_index=sm.current_question_index,
                             transcript_raw=transcript,
                             transcript_clean=transcript,
+                            sentiment_score=Decimal(f"{confidence:.3f}"),
                             was_refocused=refocus_count > 0,
                             refocus_count=refocus_count,
                             moderation_flagged=False,

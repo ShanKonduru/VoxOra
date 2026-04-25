@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import io
 import logging
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator
 
 from openai import AsyncOpenAI
 
@@ -23,17 +23,50 @@ class AIOrchestratorService:
 
     # ── Speech-to-Text ────────────────────────────────────────────────────────
 
-    async def transcribe(self, audio_bytes: bytes, language: str = "en") -> str:
-        """Transcribe audio bytes using OpenAI Whisper."""
+    @staticmethod
+    def _confidence_from_avg_logprob(avg_logprob: float) -> float:
+        """Map Whisper avg_logprob into a bounded 0-1 confidence score."""
+        return min(1.0, max(0.0, 1 + (avg_logprob / 5)))
+
+    @classmethod
+    def _confidence_from_segments(cls, segments: list[Any] | None) -> float:
+        """Compute confidence from verbose_json segments when available."""
+        if not segments:
+            return 1.0
+
+        logprobs: list[float] = []
+        for segment in segments:
+            if isinstance(segment, dict):
+                value = segment.get("avg_logprob")
+            else:
+                value = getattr(segment, "avg_logprob", None)
+            if isinstance(value, (int, float)):
+                logprobs.append(float(value))
+
+        if not logprobs:
+            return 1.0
+
+        avg_logprob = sum(logprobs) / len(logprobs)
+        return cls._confidence_from_avg_logprob(avg_logprob)
+
+    async def transcribe(self, audio_bytes: bytes, language: str = "en") -> tuple[str, float]:
+        """Transcribe audio bytes using Whisper verbose_json and return transcript + confidence."""
         audio_file = io.BytesIO(audio_bytes)
         audio_file.name = "audio.webm"
         response = await self._client.audio.transcriptions.create(
             model=settings.openai_stt_model,
             file=audio_file,
             language=language,
-            response_format="text",
+            response_format="verbose_json",
         )
-        return str(response).strip()
+
+        transcript = str(getattr(response, "text", "") or "").strip()
+        segments: list[Any] | None = getattr(response, "segments", None)
+        if segments is None and isinstance(response, dict):
+            segments = response.get("segments")
+
+        confidence = self._confidence_from_segments(segments)
+        return transcript, confidence
 
     # ── Response Generation ───────────────────────────────────────────────────
 
@@ -103,7 +136,7 @@ class AIOrchestratorService:
         3. Synthesize AI speech
         Returns (transcript, audio_bytes)
         """
-        transcript = await self.transcribe(audio_bytes)
+        transcript, _ = await self.transcribe(audio_bytes)
         response_text = await self.generate_response(system_prompt, transcript)
         audio_response = await self.synthesize_speech(response_text, voice_id)
         return transcript, audio_response

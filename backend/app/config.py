@@ -41,6 +41,7 @@ class Settings(BaseSettings):
 
     # ── Security ──────────────────────────────────────────────────────────────
     max_ws_connections_per_ip: int = 5
+    whisper_confidence_threshold: float = 0.70
     input_max_length: int = 2000
     jailbreak_blocklist_path: str = "./security/jailbreak_blocklist.txt"
 
