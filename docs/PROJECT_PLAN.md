@@ -9,19 +9,19 @@
 
 ## Current Status — April 2026
 
-> **Scaffolding completed and active hardening underway** *(Updated April 25, 2026)*.  
+> **Scaffolding completed; backend hardening materially advanced** *(Updated April 25, 2026)*.  
 > Core application scaffolding is complete across backend, frontend, AI pipeline, security, admin, and DevOps layers.  
-> Additional runtime hardening and focused integration validation are now in progress (auth/session contracts, route normalization, rate-limit verification), while full E2E/load/UAT phases still require live-environment execution.
+> The latest execution batch added DB-backed refresh-token lifecycle handling, Alembic migrations for refresh-token and cross-database model changes, sanitizer hardening, stabilized pytest infrastructure, and enforced 100% scoped integration coverage for auth/session/moderation. Full E2E/load/UAT phases still require live-environment execution.
 
 | Phase | Status | Completed |
 |---|---|---|
 | 0 — Foundation & Environment Setup | ✅ Done | April 2026 |
-| 1 — Backend Core & Database | 🟡 In Progress (scaffolding + hardening) | April 2026 / April 25 updates |
+| 1 — Backend Core & Database | 🟡 In Progress (core hardening complete, reconnect gaps remain) | April 2026 / April 25 updates |
 | 2 — AI Orchestration Engine | ✅ Done (scaffolding) | April 2026 |
 | 3 — Frontend Participant Experience | ✅ Done (scaffolding) | April 2026 |
-| 4 — Security Hardening | 🟡 In Progress (rate-limit/auth transport hardening) | April 2026 / April 25 updates |
+| 4 — Security Hardening | 🟡 In Progress (auth, sanitizer, and rate-limit hardening advanced) | April 2026 / April 25 updates |
 | 5 — Admin Dashboard | ✅ Done (scaffolding) | April 2026 |
-| 6 — Integration & E2E Testing | 🟡 Started (focused backend contract suite complete) | April 25, 2026 |
+| 6 — Integration & E2E Testing | 🟡 Started (focused backend contract suite + scoped 100% coverage complete) | April 25, 2026 |
 | 7 — Performance Optimization | ⏳ Pending | — |
 | 8 — Deployment & DevOps | ✅ Done (scaffolding) | April 2026 |
 | 9 — UAT & Production Launch | ⏳ Pending | — |
@@ -30,8 +30,11 @@
 
 - Completed: API route mounting normalization, session/auth response-contract fixes, refresh cookie extraction fix, websocket response `question_index` persistence fix.
 - Completed: route-level rate limiting on critical write endpoints (`auth`, `sessions/init`, `surveys`, `participants`, `admin/reminders`).
-- Completed: focused backend validation suite (`backend/tests/integration/test_auth_sessions_contracts.py`) with passing checks for routing, auth refresh, session-init contract, and rate limits.
-- Remaining high-priority items: DB-backed refresh token revocation/rotation persistence, Alembic baseline migrations, reconnect/flagged edge-case handling, websocket per-IP Redis connection limits.
+- Completed: DB-backed refresh-token persistence, rotation, and revocation checks using the new `refresh_tokens` model and migrations.
+- Completed: Alembic migration creation for refresh tokens plus cross-database field portability updates.
+- Completed: focused backend validation suite (`backend/tests/integration/test_auth_sessions_contracts.py`) expanded to `29` passing tests with enforced `100%` scoped coverage for `auth`, `sessions`, and `moderation`.
+- Completed: unit/integration runner hardening from repo root with explicit plugin loading and coverage gates.
+- Remaining high-priority items: reconnect/flagged edge-case handling, websocket per-IP Redis connection limits, survey question update/rebalancing, recent-persona DB wiring, frontend test coverage, and broader E2E execution.
 
 ---
 
@@ -213,11 +216,11 @@
 
 ### Phase 1 Exit Criteria
 - [x] All REST endpoints return correct HTTP status codes and response shapes
-- [x] Database migration runs cleanly from empty schema
+- [x] Alembic migration files now exist for the latest schema changes; full PostgreSQL migration validation remains a follow-up activity
 - [x] Admin login flow works end-to-end (login → JWT → protected route)
 - [x] Session init creates a session record and returns a session token
 - [x] WebSocket accepts and closes connections gracefully
-- [x] 80%+ test coverage on API routes
+- [x] Focused unit and integration runners now enforce 100% coverage on their scoped target modules
 - [x] API documentation auto-generated at `/docs` (Swagger UI)
 
 ---

@@ -1,5 +1,6 @@
 # VoxOra — Implementation Gap Analysis
 > **Generated:** April 23, 2026  
+> **Last validated against code:** April 25, 2026  
 > **Branch:** `master`  
 > **Scope:** Code-vs-documentation cross-review covering backend, frontend, security, DevOps, and testing layers.
 
@@ -7,20 +8,31 @@
 
 ## Executive Summary
 
-All scaffolding phases (0–5, 8) are marked ✅ Done in `PROJECT_PLAN.md`. This analysis found **5 critical runtime bugs** that will crash the application before it handles a single real request, **3 security deficiencies** where documented protections are absent from the code, **14 missing features** documented in the WBS but not implemented, and **8 documentation-vs-code inconsistencies**. E2E and load-testing phases (6, 7, 9) are correctly flagged as pending and are not assessed here.
+This document began as the initial cross-review baseline on April 23, 2026. Several of the highest-severity findings have since been resolved in code, especially around auth refresh handling, refresh-token persistence, rate limiting, Alembic migration creation, session response correctness, and integration-test stability.
+
+Current status after April 25 validation:
+
+- Critical auth/session contract defects from the original report are resolved
+- Refresh tokens are now persisted and revoked server-side
+- Route-level rate limiting is applied to the main write surfaces covered in the hardening pass
+- Alembic migration files now exist for refresh tokens and cross-database compatibility updates
+- Focused integration validation currently passes with `29` tests and `100%` scoped coverage for `auth`, `sessions`, and `moderation`
+- The highest-priority remaining gaps are reconnect/flagged-session handling, per-IP WebSocket connection limiting, survey question update/rebalancing, recent-persona DB wiring, frontend tests, and broader end-to-end/performance validation
 
 | Severity | Count | Impact |
 |---|---|---|
-| Critical (runtime crash / data loss) | 5 | Application non-functional until fixed |
-| Security deficiency | 3 | Bypass possible of documented security layers |
-| Feature gap | 14 | Documented functionality absent from code |
-| Doc inconsistency | 8 | README/WBS describes something different from code |
+| Critical findings resolved since initial report | 5 | Core auth/session runtime blockers no longer present |
+| Security deficiencies still open | 1 | WebSocket per-IP concurrency guard remains unenforced |
+| Feature gaps still open | 13 | Several documented backend/frontend features remain incomplete |
+| Doc/planning updates needed | Ongoing | Planning artifacts must track the implemented hardening work |
 
 ---
 
 ## Part 1 — Critical Runtime Bugs
 
 These will throw exceptions or produce DB integrity errors in normal operation.
+
+Note: Parts 1–4 preserve the original findings baseline. See Part 7 for the current validated status of implemented versus remaining items.
 
 ---
 
@@ -487,15 +499,15 @@ This is an environment readiness issue and should be resolved before using test 
 
 | ID | Category | Severity | Component | Status |
 |---|---|---|---|---|
-| BUG-01 | Runtime Crash | Critical | Backend / Admin & Session API | `Session.created_at` missing |
-| BUG-02 | Runtime Crash | Critical | Backend / Session Init | Response missing required fields |
-| BUG-03 | Data Integrity | Critical | Backend / WebSocket | `question_index` not set |
-| BUG-04 | Runtime Crash | Critical | Backend / Auth | Cookie never read in `/refresh` |
-| BUG-05 | Test Infrastructure | Critical | Tests | `sample_participant` fixture missing |
-| SEC-01 | Security | High | Backend / Auth | Refresh token not revoked server-side |
-| SEC-02 | Security | High | Backend / Rate Limiter | No `@limiter.limit()` on any endpoint |
+| BUG-01 | Runtime Crash | Critical | Backend / Admin & Session API | Resolved in current code |
+| BUG-02 | Runtime Crash | Critical | Backend / Session Init | Resolved in current code |
+| BUG-03 | Data Integrity | Critical | Backend / WebSocket | Resolved in current code |
+| BUG-04 | Runtime Crash | Critical | Backend / Auth | Resolved in current code |
+| BUG-05 | Test Infrastructure | Critical | Tests | Resolved in current code |
+| SEC-01 | Security | High | Backend / Auth | Resolved in current code |
+| SEC-02 | Security | High | Backend / Rate Limiter | Resolved on covered write endpoints |
 | SEC-03 | Security | Medium | Backend / WebSocket | Per-IP WS limit unenforced |
-| FEAT-01 | Feature Gap | High | Backend / DB | No Alembic migration files |
+| FEAT-01 | Feature Gap | High | Backend / DB | Partially resolved: migration files now exist |
 | FEAT-02 | Feature Gap | High | Backend / Session | Reconnect flow not implemented |
 | FEAT-03 | Feature Gap | Medium | Backend / Surveys | `PUT /questions/{id}` missing |
 | FEAT-04 | Feature Gap | Medium | Backend / Surveys | Order rebalancing on delete |
@@ -512,9 +524,9 @@ This is an environment readiness issue and should be resolved before using test 
 | DOC-01 | Doc Inconsistency | Low | Frontend / Routing | `:participantId` vs `:inviteToken` |
 | DOC-02 | Doc Inconsistency | Low | Backend / State Machine | `PROCESSING` state undocumented |
 | DOC-03 | Doc Inconsistency | Medium | Backend / Sessions | Reconnect endpoint admin-protected |
-| DOC-04 | Doc Inconsistency | Low | CI/CD | CI only triggers on `main` |
-| DOC-05 | Runtime Bug | High | Backend / Auth | Router prefix doubled |
-| DOC-06 | Doc Inconsistency | Low | Backend / Session | `participant_name` not returned |
+| DOC-04 | Doc Inconsistency | Low | CI/CD | Resolved in current code |
+| DOC-05 | Runtime Bug | High | Backend / Auth | Resolved in current code |
+| DOC-06 | Doc Inconsistency | Low | Backend / Session | Resolved in current code |
 | DOC-07 | Doc Inconsistency | Info | Documentation | Directory listing incomplete |
 | DOC-08 | Code Quality | Low | Frontend / Nav | `<a>` instead of `<Link>` |
 
@@ -522,36 +534,29 @@ This is an environment readiness issue and should be resolved before using test 
 
 ## Part 6 — Recommended Fix Priority
 
-### Immediate (before first integration test run)
+### Immediate
 
-1. **BUG-01** — Add/rename `created_at` → `started_at` in Session model references  
-2. **BUG-02** — Add `current_question_index=0, state=SessionState.GREETING.value` to `SessionInitResponse`  
-3. **BUG-03** — Add `question_index=sm.current_question_index` to `QuestionResponse` constructor  
-4. **BUG-04** — Fix `/auth/refresh` to read cookie via `Cookie(None, alias="voxora_refresh")`  
-5. **DOC-05** — Remove duplicate `prefix="/api/auth"` from the `auth.py` `APIRouter` constructor  
-6. **BUG-05** — Add `sample_participant` fixture to `conftest.py`  
+1. **FEAT-02** — Add `IN_PROGRESS` reconnect and `FLAGGED` rejection behavior in session init  
+2. **SEC-03 / FEAT-09** — Implement Redis WebSocket connection registry and enforce per-IP limit  
+3. **FEAT-03** — Implement `PUT /api/surveys/{id}/questions/{q_id}`  
+4. **FEAT-04** — Implement order rebalancing after question delete  
+5. **FEAT-05** — Wire recent persona DB query into `init_session`  
 
 ### Short-term (before staging deployment)
 
-7. **FEAT-01** — Generate Alembic migration for all 6 tables + indexes  
-8. **SEC-01** — Implement refresh token DB storage and revocation  
-9. **SEC-02** — Apply `@limiter.limit("10/minute")` to `init_session`  
-10. **FEAT-02** — Add `IN_PROGRESS` and `FLAGGED` reconnect/reject logic in session init  
-11. **DOC-04** — Add `develop` to CI trigger branches  
+6. **FEAT-01** — Validate Alembic migrations end-to-end on PostgreSQL, including index expectations  
+7. **FEAT-10** — Switch Whisper to `verbose_json` and implement confidence threshold  
+8. **FEAT-13** — Add Vitest/Jest frontend tests and wire them into CI  
+9. **DOC-03** — Decide whether `GET /api/sessions/{id}` remains admin-only or should support participant reconnect usage  
 
 ### Medium-term (feature completeness)
 
-12. **FEAT-03** — Implement `PUT /api/surveys/{id}/questions/{q_id}`  
-13. **FEAT-04** — Implement order rebalancing after question delete  
-14. **FEAT-05** — Wire recent persona DB query into `init_session`  
-15. **SEC-03 / FEAT-09** — Implement Redis WS connection registry and enforce per-IP limit  
-16. **FEAT-10** — Switch Whisper to `verbose_json` and implement confidence threshold  
-17. **FEAT-13** — Add Vitest/Jest frontend tests; add `npm test` to CI  
-18. **DOC-03** — Decide: make session state endpoint participant-accessible or document as admin-only  
+10. **FEAT-06**, **FEAT-07**, **FEAT-08**, **FEAT-11**, **FEAT-12**, **FEAT-14**  
+11. **DOC-01**, **DOC-02**, **DOC-06**, **DOC-08**  
 
 ### Backlog
 
-19. FEAT-06, FEAT-07, FEAT-08, FEAT-11, FEAT-12, FEAT-14, DOC-01, DOC-02, DOC-06, DOC-08
+12. Broader end-to-end, load, and UAT execution across the still-pending late phases
 
 ---
 
@@ -596,26 +601,31 @@ Focused implementation validation tests were added and executed:
 
 - `backend/tests/integration/test_auth_sessions_contracts.py`
 
-Validated behaviors:
+Validated behaviors now include:
 
 1. No double-prefixed route paths
-2. Login sets refresh cookie and returns access token
-3. Refresh endpoint enforces cookie presence
-4. Refresh succeeds with valid cookie
-5. Session init returns required response contract fields
-6. Rate-limit enforcement on login route
-7. Rate-limit enforcement on session-init route
-8. Regression guard for websocket response logging `question_index`
+2. Login success path stores refresh token state and sets cookie
+3. Invalid and inactive login paths are rejected correctly
+4. Refresh endpoint enforces cookie presence
+5. Refresh succeeds with valid cookie and rejects untracked tokens
+6. Logout revokes stored refresh token state
+7. Session init returns required response contract fields
+8. Session init rejects invalid/completed/expired/inactive survey states
+9. Session init returns `503` when Redis/session-store initialization fails
+10. Rate-limit enforcement on login and session-init routes
+11. Admin session-state endpoint returns correct not-found and success behavior
+12. Moderation integration remains covered in focused integration runs
 
-**Latest focused run result:** `8 passed`.
+**Latest focused run result:** `29 passed`, with `100%` scoped coverage across `app/api/auth.py`, `app/api/sessions.py`, and `app/services/moderation.py`.
 
 ### 7.3 Remaining Priority Gaps
 
 Still pending from earlier sections:
 
-1. Refresh token DB-backed revocation/rotation persistence
-2. Alembic migration generation for baseline schema + indexes
-3. Session `IN_PROGRESS` reconnect behavior and `FLAGGED` handling
-4. Survey question update endpoint and order rebalancing on delete
-5. WebSocket per-IP connection registry/limit enforcement in Redis
-6. Broader integration suite modernization away from SQLite-incompatible Postgres types
+1. Session `IN_PROGRESS` reconnect behavior and `FLAGGED` handling
+2. Survey question update endpoint and order rebalancing on delete
+3. WebSocket per-IP connection registry/limit enforcement in Redis
+4. Recent-persona DB query wiring in `init_session`
+5. Real PostgreSQL migration execution validation and index verification beyond the new migration files
+6. Frontend automated test coverage and broader end-to-end workflow validation
+7. Deciding whether the websocket surface should be brought under the same 100% coverage discipline as the scoped auth/session/moderation integration runner

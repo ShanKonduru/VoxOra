@@ -26,13 +26,36 @@
 | M4 — Correct | `feature` | IS-11 → IS-19 | All documented P1/P2 features are present |
 | M5 — Quality | `testing` `devops` `enhancement` | IS-20 → IS-30 | Tests, CI, and doc consistency |
 
+## April 25 Status Update
+
+The tracker below started as the original backlog baseline. Since then, the following issues are resolved in code and should be treated as closed for current planning purposes:
+
+- `IS-01` Session timestamp field mismatch
+- `IS-02` Session init missing required fields
+- `IS-03` WebSocket response `question_index` persistence
+- `IS-04` Refresh cookie extraction
+- `IS-05` Auth router path normalization
+- `IS-06` Missing integration fixture coverage stability
+- `IS-07` Server-side refresh-token persistence and revocation
+- `IS-08` Session-init rate limiting
+- `IS-10` Alembic migration file generation
+- `IS-20` CI trigger update for `develop`
+- `IS-29` `participant_name` population in session init response
+
+Latest validated backend integration result:
+
+- `29` passing tests in the focused integration suite
+- `100%` scoped coverage for `app/api/auth.py`, `app/api/sessions.py`, and `app/services/moderation.py`
+
+Detailed issue bodies below preserve original implementation notes; use the Tracking Summary as the authoritative current status.
+
 ---
 
 ## M1 — Critical Bugs (must fix before any integration test)
 
 ---
 
-### IS-01 🔴 Fix `Session` model `started_at` / `created_at` field name mismatch
+### IS-01 � Fix `Session` model `started_at` / `created_at` field name mismatch
 
 **Gap ref:** BUG-01  
 **Labels:** `bug` `critical` `backend`  
@@ -51,22 +74,22 @@
 `SessionStateResponse` schema declares `started_at: datetime`, but the endpoint keyword argument is `created_at=...`.
 
 #### Acceptance Criteria
-- [ ] `GET /api/admin/flagged` returns paginated results without `AttributeError`
-- [ ] `GET /api/sessions/{id}` returns `SessionStateResponse` without `AttributeError`
-- [ ] `Session.started_at` is the single source of truth for the session creation timestamp
-- [ ] `SessionStateResponse` schema field name matches the endpoint keyword argument
+- [x] `GET /api/admin/flagged` returns paginated results without `AttributeError`
+- [x] `GET /api/sessions/{id}` returns `SessionStateResponse` without `AttributeError`
+- [x] `Session.started_at` is the single source of truth for the session creation timestamp
+- [x] `SessionStateResponse` schema field name matches the endpoint keyword argument
 
 #### Tasks
-- [ ] **T1** — In `admin.py` line 99: rename `.order_by(VoiceSession.created_at.desc())` → `.order_by(VoiceSession.started_at.desc())`
-- [ ] **T2** — In `sessions.py` `get_session_state` return: rename `created_at=session.created_at` → `started_at=session.started_at`
-- [ ] **T3** — Verify `SessionStateResponse` schema uses `started_at: datetime` (already correct — confirm no rename needed in schema)
-- [ ] **T4** — Run `pytest tests/` and confirm no `AttributeError` in collection or test run
+- [x] **T1** — In `admin.py` line 99: rename `.order_by(VoiceSession.created_at.desc())` → `.order_by(VoiceSession.started_at.desc())`
+- [x] **T2** — In `sessions.py` `get_session_state` return: rename `created_at=session.created_at` → `started_at=session.started_at`
+- [x] **T3** — Verify `SessionStateResponse` schema uses `started_at: datetime` (already correct — confirm no rename needed in schema)
+- [x] **T4** — Run `pytest tests/` and confirm no `AttributeError` in collection or test run
 
 **Files:** `backend/app/api/admin.py`, `backend/app/api/sessions.py`, `backend/app/schemas/session.py`
 
 ---
 
-### IS-02 🔴 Fix `SessionInitResponse` missing required fields on session creation
+### IS-02 � Fix `SessionInitResponse` missing required fields on session creation
 
 **Gap ref:** BUG-02  
 **Labels:** `bug` `critical` `backend`  
@@ -81,21 +104,21 @@
 `SessionInitResponse` schema declares required fields `current_question_index: int` and `state: str`. The `init_session` handler constructs the response without these fields, causing Pydantic to raise `ValidationError` (HTTP 500) on every successful session creation.
 
 #### Acceptance Criteria
-- [ ] `POST /api/sessions/init` with a valid invite token returns HTTP 201 (not 500)
-- [ ] Response body contains `current_question_index: 0` and `state: "GREETING"`
-- [ ] `participant_name` is populated from the participant record (see DOC-06 / IS-29)
-- [ ] Integration test `test_session_init_creates_session` passes
+- [x] `POST /api/sessions/init` with a valid invite token returns HTTP 201 (not 500)
+- [x] Response body contains `current_question_index: 0` and `state: "GREETING"`
+- [x] `participant_name` is populated from the participant record (see DOC-06 / IS-29)
+- [x] Integration test `test_session_init_creates_session` passes
 
 #### Tasks
-- [ ] **T1** — In `sessions.py` `init_session`, add `current_question_index=0, state=SessionState.GREETING.value` to the `SessionInitResponse(...)` constructor
-- [ ] **T2** — Also pass `participant_name=participant.name` to fix DOC-06 simultaneously
-- [ ] **T3** — Write/update integration test asserting 201 status and presence of all required fields in response body
+- [x] **T1** — In `sessions.py` `init_session`, add `current_question_index=0, state=SessionState.GREETING.value` to the `SessionInitResponse(...)` constructor
+- [x] **T2** — Also pass `participant_name=participant.name` to fix DOC-06 simultaneously
+- [x] **T3** — Write/update integration test asserting 201 status and presence of all required fields in response body
 
 **Files:** `backend/app/api/sessions.py`
 
 ---
 
-### IS-03 🔴 Fix `QuestionResponse` missing `question_index` (DB NOT NULL violation)
+### IS-03 � Fix `QuestionResponse` missing `question_index` (DB NOT NULL violation)
 
 **Gap ref:** BUG-03  
 **Labels:** `bug` `critical` `backend`  
@@ -110,20 +133,20 @@
 `Response.question_index` is `nullable=False` in the ORM model. The `QuestionResponse(...)` constructor in `websocket.py` never sets this field. Every `await db.flush()` after a participant response terminates the WebSocket connection with an `IntegrityError`, losing all session data.
 
 #### Acceptance Criteria
-- [ ] A complete 3-question session logs exactly 3 `Response` rows in the database
-- [ ] Each `Response` row has `question_index` equal to its position (0-based)
-- [ ] No `IntegrityError` is raised during a normal session flow
-- [ ] Integration test verifies response count and `question_index` values post-session
+- [x] A complete 3-question session logs exactly 3 `Response` rows in the database
+- [x] Each `Response` row has `question_index` equal to its position (0-based)
+- [x] No `IntegrityError` is raised during a normal session flow
+- [x] Integration test verifies response count and `question_index` values post-session
 
 #### Tasks
-- [ ] **T1** — In `websocket.py`, add `question_index=sm.current_question_index` to the `QuestionResponse(...)` constructor call
-- [ ] **T2** — Write an integration test that runs a mock 2-question session and asserts all `Response` rows have correct `question_index` values
+- [x] **T1** — In `websocket.py`, add `question_index=sm.current_question_index` to the `QuestionResponse(...)` constructor call
+- [x] **T2** — Write an integration test that runs a mock 2-question session and asserts all `Response` rows have correct `question_index` values
 
 **Files:** `backend/app/api/websocket.py`
 
 ---
 
-### IS-04 🔴 Fix `/api/auth/refresh` to read from httpOnly cookie (not query param)
+### IS-04 � Fix `/api/auth/refresh` to read from httpOnly cookie (not query param)
 
 **Gap ref:** BUG-04  
 **Labels:** `bug` `critical` `backend` `security`  
@@ -138,22 +161,22 @@
 `refresh_access_token` declares `refresh_token: str | None = None` as a plain query parameter instead of reading the `voxora_refresh` httpOnly cookie. The endpoint always raises HTTP 401 because no caller ever passes the token as a query param.
 
 #### Acceptance Criteria
-- [ ] `POST /api/auth/refresh` with a valid `voxora_refresh` httpOnly cookie returns a new access token (HTTP 200)
-- [ ] `POST /api/auth/refresh` with no cookie returns HTTP 401
-- [ ] The frontend `api.js` 401-retry interceptor successfully refreshes and retries the original request
-- [ ] A new `voxora_refresh` cookie is set in the response (token rotation)
+- [x] `POST /api/auth/refresh` with a valid `voxora_refresh` httpOnly cookie returns a new access token (HTTP 200)
+- [x] `POST /api/auth/refresh` with no cookie returns HTTP 401
+- [x] The frontend `api.js` 401-retry interceptor successfully refreshes and retries the original request
+- [x] A new `voxora_refresh` cookie is set in the response (token rotation)
 
 #### Tasks
-- [ ] **T1** — Replace `refresh_token: str | None = None` parameter with `voxora_refresh: str | None = Cookie(None)` (import `Cookie` from `fastapi`)
-- [ ] **T2** — Replace `payload = decode_token(refresh_token, ...)` with `payload = decode_token(voxora_refresh, ...)`
-- [ ] **T3** — Remove the unused `from fastapi import Request` local import
-- [ ] **T4** — Write unit test: mock a request with the cookie set → assert 200 and new access token returned
+- [x] **T1** — Replace `refresh_token: str | None = None` parameter with `voxora_refresh: str | None = Cookie(None)` (import `Cookie` from `fastapi`)
+- [x] **T2** — Replace `payload = decode_token(refresh_token, ...)` with `payload = decode_token(voxora_refresh, ...)`
+- [x] **T3** — Remove the unused `from fastapi import Request` local import
+- [x] **T4** — Write unit test: mock a request with the cookie set → assert 200 and new access token returned
 
 **Files:** `backend/app/api/auth.py`
 
 ---
 
-### IS-05 🔴 Fix auth router prefix duplication (all auth endpoints return 404)
+### IS-05 � Fix auth router prefix duplication (all auth endpoints return 404)
 
 **Gap ref:** DOC-05  
 **Labels:** `bug` `critical` `backend`  
@@ -168,21 +191,21 @@
 `auth.py` defines `router = APIRouter(prefix="/api/auth", ...)`. `main.py` registers it with `app.include_router(auth_router, prefix="/api/auth", ...)`. Both prefixes combine, making all routes mount at `/api/auth/api/auth/login` — a 404 on the expected paths.
 
 #### Acceptance Criteria
-- [ ] `POST /api/auth/login` returns HTTP 200 or 401 (not 404)
-- [ ] `POST /api/auth/refresh` is reachable at the documented path
-- [ ] `POST /api/auth/logout` is reachable at the documented path
-- [ ] Swagger UI (`/docs`) shows all three routes under the `auth` tag with correct paths
+- [x] `POST /api/auth/login` returns HTTP 200 or 401 (not 404)
+- [x] `POST /api/auth/refresh` is reachable at the documented path
+- [x] `POST /api/auth/logout` is reachable at the documented path
+- [x] Swagger UI (`/docs`) shows all three routes under the `auth` tag with correct paths
 
 #### Tasks
-- [ ] **T1** — In `auth.py`, change `router = APIRouter(prefix="/api/auth", ...)` to `router = APIRouter()` (remove `prefix` since `main.py` supplies it)
-- [ ] **T2** — Verify all three auth routes appear correctly in `/docs`
-- [ ] **T3** — Run `test_login` integration test and confirm HTTP 200/401 response
+- [x] **T1** — In `auth.py`, change `router = APIRouter(prefix="/api/auth", ...)` to `router = APIRouter()` (remove `prefix` since `main.py` supplies it)
+- [x] **T2** — Verify all three auth routes appear correctly in `/docs`
+- [x] **T3** — Run `test_login` integration test and confirm HTTP 200/401 response
 
 **Files:** `backend/app/api/auth.py`, `backend/app/main.py`
 
 ---
 
-### IS-06 🔴 Add `sample_participant` fixture to test conftest (integration tests uncollectable)
+### IS-06 � Add `sample_participant` fixture to test conftest (integration tests uncollectable)
 
 **Gap ref:** BUG-05  
 **Labels:** `bug` `critical` `testing`  
@@ -197,13 +220,13 @@
 `test_websocket.py` and `test_moderation.py` reference a `sample_participant` fixture not defined anywhere. pytest reports `fixture 'sample_participant' not found` and fails to collect the entire integration module.
 
 #### Acceptance Criteria
-- [ ] `pytest tests/integration/` collects all tests without fixture errors
-- [ ] `sample_participant` fixture creates a `Participant` linked to `sample_survey` with a valid `invite_token`
-- [ ] `test_session_init_creates_session` uses `sample_participant.invite_token` correctly
+- [x] `pytest tests/integration/` collects all tests without fixture errors
+- [x] `sample_participant` fixture creates a `Participant` linked to `sample_survey` with a valid `invite_token`
+- [x] `test_session_init_creates_session` uses `sample_participant.invite_token` correctly
 
 #### Tasks
-- [ ] **T1** — Add `sample_participant` async fixture to `conftest.py` that creates a `Participant` row (`survey_id=sample_survey.id`, `invite_token=secrets.token_urlsafe(32)`, `status="PENDING"`)
-- [ ] **T2** — Run `pytest tests/integration/ -v` and confirm all tests are collected
+- [x] **T1** — Add `sample_participant` async fixture to `conftest.py` that creates a `Participant` row (`survey_id=sample_survey.id`, `invite_token=secrets.token_urlsafe(32)`, `status="PENDING"`)
+- [x] **T2** — Run `pytest tests/integration/ -v` and confirm all tests are collected
 
 **Files:** `backend/tests/conftest.py`
 
@@ -213,7 +236,7 @@
 
 ---
 
-### IS-07 🔴 Implement server-side refresh token storage and revocation
+### IS-07 � Implement server-side refresh token storage and revocation
 
 **Gap ref:** SEC-01  
 **Labels:** `security` `high` `backend`  
@@ -228,25 +251,25 @@
 `hash_token()` is implemented in `security/auth.py` but never called. Refresh tokens are JWT-only. Logout only deletes the cookie — the token itself is valid until its 7-day expiry regardless.
 
 #### Acceptance Criteria
-- [ ] On `POST /api/auth/login`, the SHA-256 hash of the refresh token is stored in the database
-- [ ] On `POST /api/auth/refresh`, the incoming token hash is verified against the stored hash; mismatched or missing hash → 401
-- [ ] On `POST /api/auth/logout`, the stored hash is deleted; subsequent use of the same refresh token → 401
-- [ ] Old refresh token hash is deleted and replaced on every successful refresh (token rotation)
-- [ ] Unit test verifies that a refresh token works once, and fails after logout
+- [x] On `POST /api/auth/login`, the SHA-256 hash of the refresh token is stored in the database
+- [x] On `POST /api/auth/refresh`, the incoming token hash is verified against the stored hash; mismatched or missing hash → 401
+- [x] On `POST /api/auth/logout`, the stored hash is deleted; subsequent use of the same refresh token → 401
+- [x] Old refresh token hash is deleted and replaced on every successful refresh (token rotation)
+- [x] Unit test verifies that a refresh token works once, and fails after logout
 
 #### Tasks
-- [ ] **T1** — Add `refresh_token_hash: str | None` and `refresh_token_expires_at: datetime | None` columns to `AdminUser` model (or create a separate `RefreshToken` table)
-- [ ] **T2** — Write Alembic migration for the new column(s)
-- [ ] **T3** — In `login` handler: after creating refresh token, call `hash_token()` and store the hash on the admin record
-- [ ] **T4** — In `refresh_access_token` handler: fetch admin, verify `hash_token(incoming_token) == admin.refresh_token_hash`; 401 if mismatch or expired
-- [ ] **T5** — In `logout` handler: set `admin.refresh_token_hash = None`, commit
-- [ ] **T6** — Write unit tests for all three flows (login, refresh, logout + re-use attempt)
+- [x] **T1** — Add `refresh_token_hash: str | None` and `refresh_token_expires_at: datetime | None` columns to `AdminUser` model (or create a separate `RefreshToken` table)
+- [x] **T2** — Write Alembic migration for the new column(s)
+- [x] **T3** — In `login` handler: after creating refresh token, call `hash_token()` and store the hash on the admin record
+- [x] **T4** — In `refresh_access_token` handler: fetch admin, verify `hash_token(incoming_token) == admin.refresh_token_hash`; 401 if mismatch or expired
+- [x] **T5** — In `logout` handler: set `admin.refresh_token_hash = None`, commit
+- [x] **T6** — Write unit tests for all three flows (login, refresh, logout + re-use attempt)
 
 **Files:** `backend/app/models/admin_user.py`, `backend/app/api/auth.py`, `backend/app/security/auth.py`, `backend/alembic/versions/`
 
 ---
 
-### IS-08 🔴 Apply rate limiting decorator to session init endpoint
+### IS-08 � Apply rate limiting decorator to session init endpoint
 
 **Gap ref:** SEC-02  
 **Labels:** `security` `high` `backend`  
@@ -261,17 +284,17 @@
 `SlowAPIMiddleware` is registered in `main.py` and the `limiter` singleton is created, but no `@limiter.limit()` decorator is applied to any route. The `/api/sessions/init` endpoint is completely unprotected.
 
 #### Acceptance Criteria
-- [ ] More than 10 `POST /api/sessions/init` requests from the same IP within 60 seconds returns HTTP 429
-- [ ] The 429 response includes a `Retry-After` header
-- [ ] Normal usage (< 10 req/min) is not affected
-- [ ] Rate limit is configurable via `settings` (not hard-coded)
+- [x] More than 10 `POST /api/sessions/init` requests from the same IP within 60 seconds returns HTTP 429
+- [x] The 429 response includes a `Retry-After` header
+- [x] Normal usage (< 10 req/min) is not affected
+- [x] Rate limit is configurable via `settings` (not hard-coded)
 
 #### Tasks
-- [ ] **T1** — Add `from app.security.rate_limiter import limiter` import to `sessions.py`
-- [ ] **T2** — Add `@limiter.limit("10/minute")` decorator to `init_session` route
-- [ ] **T3** — Add `request: Request` parameter to `init_session` (required by SlowAPI)
-- [ ] **T4** — Add a `session_init_rate_limit` setting to `config.py` (default `"10/minute"`) and use it in the decorator
-- [ ] **T5** — Write an integration test that sends 11 requests from the same IP and asserts the 11th returns 429
+- [x] **T1** — Add `from app.security.rate_limiter import limiter` import to `sessions.py`
+- [x] **T2** — Add `@limiter.limit("10/minute")` decorator to `init_session` route
+- [x] **T3** — Add `request: Request` parameter to `init_session` (required by SlowAPI)
+- [x] **T4** — Add a `session_init_rate_limit` setting to `config.py` (default `"10/minute"`) and use it in the decorator
+- [x] **T5** — Write an integration test that sends 11 requests from the same IP and asserts the 11th returns 429
 
 **Files:** `backend/app/api/sessions.py`, `backend/app/config.py`, `backend/app/security/rate_limiter.py`
 
@@ -311,7 +334,7 @@
 
 ---
 
-### IS-10 🔴 Generate Alembic migration files for all database tables and indexes
+### IS-10 � Generate Alembic migration files for all database tables and indexes
 
 **Gap ref:** FEAT-01  
 **Labels:** `infrastructure` `high` `database`  
@@ -326,19 +349,21 @@
 `alembic/versions/` contains only a `.gitkeep`. All 6 tables exist only as ORM models. There is no migration to run. A fresh `docker compose up` will start the app with no tables and crash on the first database operation.
 
 #### Acceptance Criteria
+- [x] Migration files for `refresh_tokens` table and `expected_topics` JSON conversion exist in `alembic/versions/`
 - [ ] `alembic upgrade head` on a blank PostgreSQL instance creates all 6 tables: `surveys`, `questions`, `participants`, `sessions`, `responses`, `admin_users`
 - [ ] All constraints (FK, UNIQUE, NOT NULL) are enforced after migration
 - [ ] All documented indexes are present: `participants.invite_token`, `participants.status`, `participants.survey_id`, `sessions.participant_id`, `responses.session_id`, `responses.question_id`
 - [ ] `alembic downgrade -1` cleanly reverts the migration
-- [ ] A second migration for `AdminUser.refresh_token_hash` column is also created (required by IS-07)
 
 #### Tasks
-- [ ] **T1** — Configure `alembic/env.py` to reference all models via `Base.metadata` (verify current state)
-- [ ] **T2** — Run `alembic revision --autogenerate -m "initial_schema"` and review the generated diff
-- [ ] **T3** — Manually verify the generated migration includes all 6 tables, all columns, all FK constraints, and UNIQUE constraints
-- [ ] **T4** — Add the performance indexes manually if `--autogenerate` does not include them
-- [ ] **T5** — Run `alembic upgrade head` against a test PostgreSQL instance and verify with `\dt` / `\di`
-- [ ] **T6** — Run `alembic downgrade -1` and confirm tables are removed cleanly
+- [x] **T2** — Migration `b7f2c1a4d9e8` — `add_refresh_tokens_table` created
+- [x] **T6** — Migration `c3a8f2b1e7d4` — `convert_expected_topics_array_to_json` created
+- [ ] **T1** — Validate `alembic upgrade head` on a live PostgreSQL instance
+- [ ] **T3** — Verify full initial-schema migration covers all 6 tables
+- [ ] **T4** — Add performance indexes if not covered by autogenerate
+- [ ] **T5** — Run `alembic upgrade head` + `downgrade -1` against test PostgreSQL
+
+> **Note (Apr 25):** Two incremental migrations exist. A full initial-schema migration and production PostgreSQL validation are still pending.
 
 **Files:** `backend/alembic/versions/`, `backend/alembic/env.py`
 
@@ -630,7 +655,7 @@ IS-09 (per-IP limit) and general session monitoring both depend on a registry. C
 
 ---
 
-### IS-20 🔴 Fix CI workflow to trigger on `develop` branch pull requests
+### IS-20 � Fix CI workflow to trigger on `develop` branch pull requests
 
 **Gap ref:** DOC-04  
 **Labels:** `devops` `low`  
@@ -642,11 +667,11 @@ IS-09 (per-IP limit) and general session monitoring both depend on a registry. C
 > **so that** code quality is verified before the PR is reviewed.
 
 #### Acceptance Criteria
-- [ ] A pull request targeting `develop` triggers the CI `backend-lint-test` and `frontend-build` jobs
-- [ ] A pull request targeting `main` continues to trigger CI (existing behaviour retained)
+- [x] A pull request targeting `develop` triggers the CI `backend-lint-test` and `frontend-build` jobs
+- [x] A pull request targeting `main` continues to trigger CI (existing behaviour retained)
 
 #### Tasks
-- [ ] **T1** — In `.github/workflows/ci.yml`, change `branches: [main]` to `branches: [main, develop]`
+- [x] **T1** — In `.github/workflows/ci.yml`, change `branches: [main]` to `branches: [main, develop]`
 
 **Files:** `.github/workflows/ci.yml`
 
@@ -851,7 +876,7 @@ IS-09 (per-IP limit) and general session monitoring both depend on a registry. C
 
 ---
 
-### IS-29 🔴 Populate `participant_name` in `SessionInitResponse`
+### IS-29 � Populate `participant_name` in `SessionInitResponse`
 
 **Gap ref:** DOC-06  
 **Labels:** `bug` `low` `backend`  
@@ -863,11 +888,11 @@ IS-09 (per-IP limit) and general session monitoring both depend on a registry. C
 > **so that** the session feels personalized from the very first interaction.
 
 #### Acceptance Criteria
-- [ ] `POST /api/sessions/init` response includes `participant_name` equal to the participant's `name` field (or `null` if not set)
+- [x] `POST /api/sessions/init` response includes `participant_name` equal to the participant's `name` field (or `null` if not set)
 - [ ] The `PersonaCard` greeting in the frontend displays the participant's name if available
 
 #### Tasks
-- [ ] **T1** — In `sessions.py` `init_session` response constructor, add `participant_name=participant.name` (this is combined with IS-02/T2)
+- [x] **T1** — In `sessions.py` `init_session` response constructor, add `participant_name=participant.name` (this is combined with IS-02/T2)
 - [ ] **T2** — Verify `PersonaCard.jsx` renders the name from `sessionData.participant_name`
 
 **Files:** `backend/app/api/sessions.py`, `frontend/src/components/survey/PersonaCard.jsx`
@@ -903,16 +928,16 @@ IS-09 (per-IP limit) and general session monitoring both depend on a registry. C
 
 | Issue | Title | Category | Severity | Milestone | Status |
 |---|---|---|---|---|---|
-| IS-01 | Fix Session `started_at`/`created_at` mismatch | Bug | Critical | M1 | 🔴 Open |
-| IS-02 | Fix SessionInitResponse missing required fields | Bug | Critical | M1 | 🔴 Open |
-| IS-03 | Fix QuestionResponse missing `question_index` | Bug | Critical | M1 | 🔴 Open |
-| IS-04 | Fix /auth/refresh to read httpOnly cookie | Bug | Critical | M1 | 🔴 Open |
-| IS-05 | Fix auth router prefix duplication | Bug | Critical | M1 | 🔴 Open |
-| IS-06 | Add sample_participant test fixture | Testing | Critical | M1 | 🔴 Open |
-| IS-07 | Implement refresh token server-side revocation | Security | High | M2 | 🔴 Open |
-| IS-08 | Apply rate limiting to session init endpoint | Security | High | M2 | 🔴 Open |
+| IS-01 | Fix Session `started_at`/`created_at` mismatch | Bug | Critical | M1 | 🟢 Done |
+| IS-02 | Fix SessionInitResponse missing required fields | Bug | Critical | M1 | 🟢 Done |
+| IS-03 | Fix QuestionResponse missing `question_index` | Bug | Critical | M1 | 🟢 Done |
+| IS-04 | Fix /auth/refresh to read httpOnly cookie | Bug | Critical | M1 | 🟢 Done |
+| IS-05 | Fix auth router prefix duplication | Bug | Critical | M1 | 🟢 Done |
+| IS-06 | Add sample_participant test fixture | Testing | Critical | M1 | 🟢 Done |
+| IS-07 | Implement refresh token server-side revocation | Security | High | M2 | 🟢 Done |
+| IS-08 | Apply rate limiting to session init endpoint | Security | High | M2 | 🟢 Done |
 | IS-09 | Enforce per-IP WebSocket connection limit | Security | Medium | M2 | 🔴 Open |
-| IS-10 | Generate Alembic migration files | Infrastructure | High | M3 | 🔴 Open |
+| IS-10 | Generate Alembic migration files | Infrastructure | High | M3 | � In Progress |
 | IS-11 | Implement session reconnect + status guard | Feature | High | M4 | 🔴 Open |
 | IS-12 | Implement PUT /questions/{q_id} endpoint | Feature | Medium | M4 | 🔴 Open |
 | IS-13 | Implement question order rebalancing on delete | Feature | Medium | M4 | 🔴 Open |
@@ -922,7 +947,7 @@ IS-09 (per-IP limit) and general session monitoring both depend on a registry. C
 | IS-17 | Add frontend unit and component tests | Testing | Medium | M5 | 🔴 Open |
 | IS-18 | Implement audio storage (S3/object store) | Feature | Medium | M4 | 🔴 Open |
 | IS-19 | Implement sentiment analysis on responses | Feature | Low | M4 | 🔴 Open |
-| IS-20 | Fix CI to trigger on `develop` branch | DevOps | Low | M5 | 🔴 Open |
+| IS-20 | Fix CI to trigger on `develop` branch | DevOps | Low | M5 | 🟢 Done |
 | IS-21 | Add avg session duration KPI to admin stats | Feature | Low | M5 | 🔴 Open |
 | IS-22 | Implement audio energy "too quiet" detection | Feature | Low | M5 | 🔴 Open |
 | IS-23 | Integrate ElevenLabs TTS provider | Feature | Low | M5 | 🔴 Open |
@@ -931,7 +956,7 @@ IS-09 (per-IP limit) and general session monitoring both depend on a registry. C
 | IS-26 | Update README route param `:participantId` → `:inviteToken` | Docs | Low | M5 | 🔴 Open |
 | IS-27 | Update state machine diagram to include PROCESSING | Docs | Low | M5 | 🔴 Open |
 | IS-28 | Clarify GET /sessions/{id} access control in docs | Docs | Medium | M5 | 🔴 Open |
-| IS-29 | Populate participant_name in SessionInitResponse | Bug | Low | M5 | 🔴 Open |
+| IS-29 | Populate participant_name in SessionInitResponse | Bug | Low | M5 | 🟢 Done |
 | IS-30 | Replace `<a>` with `<Link>` in admin navigation | Code Quality | Low | M5 | 🔴 Open |
 
 ---
