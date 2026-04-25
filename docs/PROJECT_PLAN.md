@@ -9,32 +9,41 @@
 
 ## Current Status — April 2026
 
-> **Scaffolding completed; backend hardening materially advanced** *(Updated April 25, 2026)*.  
-> Core application scaffolding is complete across backend, frontend, AI pipeline, security, admin, and DevOps layers.  
-> The latest execution batch added DB-backed refresh-token lifecycle handling, Alembic migrations for refresh-token and cross-database model changes, sanitizer hardening, stabilized pytest infrastructure, and enforced 100% scoped integration coverage for auth/session/moderation. Full E2E/load/UAT phases still require live-environment execution.
+> **Sprint 1 backend features completed; hardening and validation advanced** *(Updated April 26, 2026)*.  
+> Core application scaffolding is complete. Session 2 (April 25) added DB-backed refresh-token lifecycle, hardened auth/session contracts, and enforced 100% scoped integration coverage. Session 3 (April 26) completed Sprint 1 backend feature block: Alembic baseline + migrations, websocket per-IP limits + Redis connection registry, session reconnect + question CRUD + order rebalancing, Whisper confidence threshold + re-ask flow, and S3/MinIO audio upload integration with optional dependency handling. Full E2E/load/UAT phases still require live-environment execution.
 
 | Phase | Status | Completed |
 |---|---|---|
 | 0 — Foundation & Environment Setup | ✅ Done | April 2026 |
-| 1 — Backend Core & Database | 🟡 In Progress (core hardening complete, reconnect gaps remain) | April 2026 / April 25 updates |
-| 2 — AI Orchestration Engine | ✅ Done (scaffolding) | April 2026 |
+| 1 — Backend Core & Database | � Sprint 1 Complete (migrations, session resilience, question lifecycle, STT, storage) | April 26, 2026 |
+| 2 — AI Orchestration Engine | ✅ Done (scaffolding + STT confidence hardening) | April 2026 / April 26 updates |
 | 3 — Frontend Participant Experience | ✅ Done (scaffolding) | April 2026 |
-| 4 — Security Hardening | 🟡 In Progress (auth, sanitizer, and rate-limit hardening advanced) | April 2026 / April 25 updates |
+| 4 — Security Hardening | 🟢 Complete (auth, sanitizer, rate-limit, websocket per-IP) | April 26, 2026 |
 | 5 — Admin Dashboard | ✅ Done (scaffolding) | April 2026 |
-| 6 — Integration & E2E Testing | 🟡 Started (focused backend contract suite + scoped 100% coverage complete) | April 25, 2026 |
+| 6 — Integration & E2E Testing | 🟡 In Progress (focused backend suite 100% coverage; frontend/E2E pending) | April 26, 2026 |
 | 7 — Performance Optimization | ⏳ Pending | — |
-| 8 — Deployment & DevOps | ✅ Done (scaffolding) | April 2026 |
+| 8 — Deployment & DevOps | ✅ Done (scaffolding + docker-compose MinIO) | April 26, 2026 |
 | 9 — UAT & Production Launch | ⏳ Pending | — |
 
-### April 25 Execution Notes
+### April 25–26 Execution Notes
 
+**April 25 session:**
 - Completed: API route mounting normalization, session/auth response-contract fixes, refresh cookie extraction fix, websocket response `question_index` persistence fix.
-- Completed: route-level rate limiting on critical write endpoints (`auth`, `sessions/init`, `surveys`, `participants`, `admin/reminders`).
-- Completed: DB-backed refresh-token persistence, rotation, and revocation checks using the new `refresh_tokens` model and migrations.
+- Completed: route-level rate limiting on critical write endpoints.
+- Completed: DB-backed refresh-token persistence, rotation, and revocation checks.
 - Completed: Alembic migration creation for refresh tokens plus cross-database field portability updates.
-- Completed: focused backend validation suite (`backend/tests/integration/test_auth_sessions_contracts.py`) expanded to `29` passing tests with enforced `100%` scoped coverage for `auth`, `sessions`, and `moderation`.
-- Completed: unit/integration runner hardening from repo root with explicit plugin loading and coverage gates.
-- Remaining high-priority items: reconnect/flagged edge-case handling, websocket per-IP Redis connection limits, survey question update/rebalancing, recent-persona DB wiring, frontend test coverage, and broader E2E execution.
+- Completed: focused backend validation suite with `29` passing tests and enforced `100%` scoped coverage.
+
+**April 26 session (Sprint 1 completion):**
+- Completed: Initial Alembic schema baseline migration (`a0000000001`) covering all 6 core tables.
+- Completed: Websocket per-IP connection limit enforcement and Redis connection registry (IS-09, IS-15).
+- Completed: Session reconnect handling for `IN_PROGRESS` participants and `FLAGGED` rejection (IS-11).
+- Completed: Survey question `PUT` endpoint and `order_index` rebalancing after delete (IS-12, IS-13).
+- Completed: Recent persona DB query wiring for non-repetition (IS-14).
+- Completed: Whisper STT confidence threshold with re-ask flow, switching to `verbose_json` format (IS-16).
+- Completed: S3/MinIO audio upload integration with graceful degradation when `aioboto3` unavailable (IS-18).
+- Completed: MinIO service added to docker-compose for local audio storage with initialization.
+- Remaining high-priority items: end-to-end test coverage (frontend tests), migration validation on PostgreSQL, performance optimization, and UAT readiness.
 
 ---
 

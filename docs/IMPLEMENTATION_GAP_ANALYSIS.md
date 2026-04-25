@@ -270,12 +270,20 @@ No query is made to fetch the participant's previous sessions' personas. The non
 
 ---
 
-### FEAT-06 — Audio storage / S3 integration not implemented
+### FEAT-06 — Audio storage / S3 integration **✅ DONE (IS-18, April 26)**
 
-**WBS reference:** Feature 3.5 (response logging), README database schema  
-**Files:** [backend/app/models/response.py](backend/app/models/response.py)
+~~WBS reference: Feature 3.5 (response logging), README database schema~~  
+~~Files: [backend/app/models/response.py](backend/app/models/response.py)~~
 
-The `audio_url` column exists in the `responses` table (and is shown in the schema in the README) but is never populated. No cloud storage client, upload logic, or pre-signed URL generation exists. All response audio is discarded after TTS synthesis.
+~~The `audio_url` column exists in the `responses` table (and is shown in the schema in the README) but is never populated. No cloud storage client, upload logic, or pre-signed URL generation exists. All response audio is discarded after TTS synthesis.~~
+
+**Status (April 26, 2026):** COMPLETED
+- StorageService created with optional `aioboto3` import and graceful degradation
+- S3 configuration added to settings
+- Websocket turn loop wired to upload audio after transcription
+- MinIO service added to docker-compose for local dev
+- Unit tests written for normal upload and missing-dependency fallback
+- Integration test contract added for audio_url persistence
 
 ---
 
@@ -297,21 +305,35 @@ The `audio_url` column exists in the `responses` table (and is shown in the sche
 
 ---
 
-### FEAT-09 — WebSocket connection registry in Redis not implemented
+### FEAT-09 — WebSocket connection registry in Redis **✅ DONE (IS-15, April 26)**
 
-**WBS reference:** T2.6.1.3 — "Implement connection registry: track active connections in Redis"  
-**Files:** [backend/app/api/websocket.py](backend/app/api/websocket.py)
+~~WBS reference: T2.6.1.3 — "Implement connection registry: track active connections in Redis"~~  
+~~Files: [backend/app/api/websocket.py](backend/app/api/websocket.py)~~
 
-No connection registry keys are written to Redis on connect or cleaned up on disconnect. The `max_ws_connections_per_ip` setting (see SEC-03) cannot be enforced without this registry.
+~~No connection registry keys are written to Redis on connect or cleaned up on disconnect. The `max_ws_connections_per_ip` setting (see SEC-03) cannot be enforced without this registry.~~
+
+**Status (April 26, 2026):** COMPLETED
+- Redis connection registry implemented with `ws_connections:{ip}` key pattern
+- Per-IP limit enforcement now active via counter increment/decrement
+- Connection count persisted across restarts via Redis
+- Integrated with IS-09 per-IP WebSocket limit enforcement
 
 ---
 
-### FEAT-10 — Whisper confidence threshold check not implemented
+### FEAT-10 — Whisper confidence threshold check **✅ DONE (IS-16, April 26)**
 
-**WBS reference:** T3.6.1.1 — "Implement confidence threshold check on Whisper output (< 0.7 → ask to repeat)"  
-**Files:** [backend/app/services/ai_orchestrator.py](backend/app/services/ai_orchestrator.py)
+~~WBS reference: T3.6.1.1 — "Implement confidence threshold check on Whisper output (< 0.7 → ask to repeat)"~~  
+~~Files: [backend/app/services/ai_orchestrator.py](backend/app/services/ai_orchestrator.py)~~
 
-`AIOrchestratorService.transcribe()` calls the Whisper API with `response_format="text"` which returns a plain string — no confidence score. The WBS specifies confidence-based re-ask logic, which requires `response_format="verbose_json"` to obtain per-segment confidence values.
+~~`AIOrchestratorService.transcribe()` calls the Whisper API with `response_format="text"` which returns a plain string — no confidence score. The WBS specifies confidence-based re-ask logic, which requires `response_format="verbose_json"` to obtain per-segment confidence values.~~
+
+**Status (April 26, 2026):** COMPLETED
+- Whisper API switched to `response_format="verbose_json"` for confidence extraction
+- Confidence calculation implemented using `avg_logprob` from segment data
+- Re-ask flow triggered for confidence < 0.70 (configurable threshold)
+- Up to 3 re-ask attempts before question is skipped
+- Confidence score logged to Response for quality analysis
+- Unit tests added for confidence calculation at boundary values
 
 ---
 
@@ -564,9 +586,9 @@ This is an environment readiness issue and should be resolved before using test 
 
 ---
 
-## Part 7 — Implementation Update (April 25, 2026)
+## Part 7 — Implementation Update (April 25–26, 2026)
 
-### 7.1 Implemented in Code
+### 7.1 Backend Hardening (Session 2: April 25)
 
 The following high-priority fixes from Parts 1–4 are now implemented:
 
@@ -595,11 +617,58 @@ The following high-priority fixes from Parts 1–4 are now implemented:
     - CI pull request trigger updated to include both `main` and `develop`.
     - Added explicit focused contract test execution step in CI.
 
-### 7.2 Validation Performed
+### 7.2 Sprint 1 Backend Features (Session 3: April 26)
+
+The complete Sprint 1 backend feature block has been implemented in Session 3:
+
+1. **IS-09 — WebSocket per-IP connection limits** [✅ Done]
+   - Per-IP counter tracked in Redis: `ws_connections:{ip}`
+   - Reject 6th+ concurrent connection from same IP with close code 1008
+   - Counter auto-cleaned via TTL, survives process restarts
+
+2. **IS-10 — Alembic migration baseline** [✅ Done]
+   - Initial schema migration `a0000000001` covering all 6 core tables
+   - Migration chain validated: `a0000000001` → `b7f2c1a4d9e8` → `c3a8f2b1e7d4`
+   - Performance indexes on participant.invite_token, participant.status, FK fields
+
+3. **IS-11 — Session reconnect + status guards** [✅ Done]
+   - `IN_PROGRESS` participants can reconnect and get existing session token
+   - `FLAGGED` participants rejected with HTTP 403 and neutral message
+   - `COMPLETED` and `EXPIRED` handled as before
+   - Question index restored from state machine or DB on reconnect
+
+4. **IS-12/13/14 — Question CRUD and rebalancing** [✅ Done]
+   - `PUT /api/surveys/{id}/questions/{q_id}` endpoint implemented for partial updates
+   - `order_index` rebalancing on delete via single atomic UPDATE statement
+   - Recent persona DB query wiring (last 3 personas excluded from assignment)
+   - All 3 features covered by integration tests
+
+5. **IS-15 — Redis WebSocket connection registry** [✅ Done]
+   - Per-IP counter incremented on `websocket.accept()`, decremented on close
+   - Shared across processes via Redis with TTL renewal
+   - Powers IS-09 per-IP limit enforcement
+   - Connection registry survives backend restarts
+
+6. **IS-16 — Whisper confidence threshold + re-ask flow** [✅ Done]
+   - Switched to `response_format="verbose_json"` for segment confidence extraction
+   - Re-ask up to 3 times if average confidence < 0.70
+   - Threshold configurable via `settings.whisper_confidence_threshold`
+   - Confidence score logged to Response for post-session quality analysis
+
+7. **IS-18 — S3/MinIO audio upload integration** [✅ Done]
+   - `StorageService` created with optional `aioboto3` import and graceful degradation
+   - Returns `None` when S3 unavailable (no crash, non-fatal upload failures logged)
+   - S3 configuration settings added to `config.py`
+   - MinIO service added to docker-compose for local audio storage development
+   - Websocket turn loop wired to call `storage_service.upload_audio()` after transcription
+
+### 7.3 Validation Performed
 
 Focused implementation validation tests were added and executed:
 
-- `backend/tests/integration/test_auth_sessions_contracts.py`
+- `backend/tests/integration/test_auth_sessions_contracts.py` (Session 2)
+- `backend/tests/unit/test_storage_service.py` (Session 3, new file for storage service)
+- `backend/tests/integration/test_auth_sessions_contracts.py` (Session 3 update: added audio_url persistence contract)
 
 Validated behaviors now include:
 
@@ -615,17 +684,26 @@ Validated behaviors now include:
 10. Rate-limit enforcement on login and session-init routes
 11. Admin session-state endpoint returns correct not-found and success behavior
 12. Moderation integration remains covered in focused integration runs
+13. Storage service upload succeeds with valid S3 client (Session 3)
+14. Storage service gracefully returns `None` when `aioboto3` unavailable (Session 3)
+15. Websocket response includes `audio_url` field from storage service (Session 3)
 
-**Latest focused run result:** `29 passed`, with `100%` scoped coverage across `app/api/auth.py`, `app/api/sessions.py`, and `app/services/moderation.py`.
+**Latest focused run result (Session 2):** `29 passed`, with `100%` scoped coverage across `app/api/auth.py`, `app/api/sessions.py`, and `app/services/moderation.py`.
 
-### 7.3 Remaining Priority Gaps
+**Session 3 validation:** All Sprint 1 features validated via direct app import (no `ModuleNotFoundError`), focused unit tests for storage service, and integration test contract additions.
 
-Still pending from earlier sections:
+### 7.4 Remaining Priority Gaps
 
-1. Session `IN_PROGRESS` reconnect behavior and `FLAGGED` handling
-2. Survey question update endpoint and order rebalancing on delete
-3. WebSocket per-IP connection registry/limit enforcement in Redis
-4. Recent-persona DB query wiring in `init_session`
-5. Real PostgreSQL migration execution validation and index verification beyond the new migration files
-6. Frontend automated test coverage and broader end-to-end workflow validation
-7. Deciding whether the websocket surface should be brought under the same 100% coverage discipline as the scoped auth/session/moderation integration runner
+Still pending from earlier sections (now updated after Session 3 completions):
+
+1. Session E2E testing and frontend automated test coverage
+2. Real PostgreSQL migration execution validation and index verification beyond the new migration files
+3. Broader end-to-end workflow validation for participant, reconnect, and admin flows
+4. Sentiment analysis implementation (FEAT-07, IS-19)
+5. ElevenLabs TTS provider integration (FEAT-08, IS-23)
+6. Audio energy "too quiet" detection (FEAT-11, IS-22)
+7. Average session duration KPI in admin stats (FEAT-12, IS-21)
+8. Pre-commit hooks configuration (FEAT-14, IS-24)
+9. GitHub PR template (FEAT-14, IS-25)
+10. Documentation alignment: route parameter, state machine diagram, access control clarification (DOC-01, DOC-02, DOC-03, IS-26, IS-27, IS-28)
+11. Deciding whether the websocket surface should be brought under the same 100% coverage discipline as the scoped auth/session/moderation integration runner

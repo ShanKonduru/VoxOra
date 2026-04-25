@@ -594,7 +594,7 @@ IS-09 (per-IP limit) and general session monitoring both depend on a registry. C
 
 ---
 
-### IS-18 🔴 Implement audio storage integration (S3/object store)
+### IS-18 � Implement audio storage integration (S3/object store)
 
 **Gap ref:** FEAT-06  
 **Labels:** `feature` `medium` `backend` `infrastructure`  
@@ -606,21 +606,23 @@ IS-09 (per-IP limit) and general session monitoring both depend on a registry. C
 > **so that** I can review the original recordings to verify transcript accuracy or resolve disputes.
 
 #### Acceptance Criteria
-- [ ] After transcription, audio bytes are uploaded to S3 (or S3-compatible storage)
-- [ ] `Response.audio_url` is populated with the object's public or pre-signed URL
-- [ ] Upload failure is non-fatal (logged as a warning, session continues)
-- [ ] Storage credentials are injected via environment variables (`S3_BUCKET`, `AWS_ACCESS_KEY_ID`, etc.)
-- [ ] Local development can use MinIO (configured in `docker-compose.yml`)
+- [x] After transcription, audio bytes are uploaded to S3 (or S3-compatible storage)
+- [x] `Response.audio_url` is populated with the object's public or pre-signed URL
+- [x] Upload failure is non-fatal (logged as a warning, session continues)
+- [x] Storage credentials are injected via environment variables (`S3_BUCKET`, `AWS_ACCESS_KEY_ID`, etc.)
+- [x] Local development can use MinIO (configured in `docker-compose.yml`)
+- [x] Service gracefully degrades when `aioboto3` is unavailable (optional import, returns `None` on missing dependency)
 
 #### Tasks
-- [ ] **T1** — Add S3 settings to `config.py`: `s3_bucket`, `s3_region`, `aws_access_key_id`, `aws_secret_access_key`, `s3_endpoint_url` (for MinIO)
-- [ ] **T2** — Create `backend/app/services/storage_service.py` with `async def upload_audio(session_id, question_index, audio_bytes) -> str | None`
-- [ ] **T3** — Use `aioboto3` (async boto3 wrapper) to upload; key pattern: `audio/{session_id}/q{question_index}.webm`
-- [ ] **T4** — In `websocket.py` turn loop: after transcription, call `storage_service.upload_audio(...)` and pass result to `QuestionResponse.audio_url`
-- [ ] **T5** — Add MinIO service to `docker-compose.yml` for local dev
-- [ ] **T6** — Write a unit test with a mocked S3 client asserting upload is called with correct key and bytes
+- [x] **T1** — Add S3 settings to `config.py`: `s3_bucket`, `s3_region`, `aws_access_key_id`, `aws_secret_access_key`, `s3_endpoint_url` (for MinIO)
+- [x] **T2** — Create `backend/app/services/storage_service.py` with `async def upload_audio(session_id, question_index, audio_bytes) -> str | None`
+- [x] **T3** — Use `aioboto3` (async boto3 wrapper) to upload; key pattern: `audio/{session_id}/q{question_index}.webm`
+- [x] **T4** — In `websocket.py` turn loop: after transcription, call `storage_service.upload_audio(...)` and pass result to `QuestionResponse.audio_url`
+- [x] **T5** — Add MinIO service to `docker-compose.yml` for local dev
+- [x] **T6** — Write a unit test with a mocked S3 client asserting upload is called with correct key and bytes
+- [x] **T7** — Add integration test contract check verifying `audio_url` is included in response logging
 
-**Files:** `backend/app/services/storage_service.py` (new), `backend/app/config.py`, `backend/app/api/websocket.py`, `docker-compose.yml`
+**Files:** `backend/app/services/storage_service.py` (created), `backend/app/config.py` (updated), `backend/app/api/websocket.py` (updated), `docker-compose.yml` (updated), `backend/tests/unit/test_storage_service.py` (created), `backend/tests/integration/test_auth_sessions_contracts.py` (updated)
 
 ---
 
