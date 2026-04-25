@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,11 +30,13 @@ router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 async def init_session(
     body: SessionInitRequest,
     request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_db),
 ) -> SessionInitResponse:
     """
     Validate participant invite token, create a voice session, assign a persona.
     Returns a short-lived session JWT used to authenticate the WebSocket connection.
+    Reconnects an existing IN_PROGRESS session instead of creating a duplicate.
     """
     # Validate invite token
     result = await db.execute(
@@ -50,13 +52,46 @@ async def init_session(
     if participant.status == ParticipantStatus.EXPIRED:
         raise HTTPException(status_code=status.HTTP_410_GONE, detail="Invite token has expired")
 
+    if participant.status == ParticipantStatus.FLAGGED:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This session has been ended.")
+
+    # ── Reconnect path: return existing session token instead of creating duplicate ──
+    if participant.status == ParticipantStatus.IN_PROGRESS:
+        existing_result = await db.execute(
+            select(VoiceSession)
+            .where(VoiceSession.participant_id == participant.id)
+            .order_by(VoiceSession.started_at.desc())
+            .limit(1)
+        )
+        existing_session: VoiceSession | None = existing_result.scalar_one_or_none()
+        if existing_session:
+            survey_result = await db.execute(
+                select(Survey)
+                .options(selectinload(Survey.questions))
+                .where(Survey.id == participant.survey_id)
+            )
+            survey: Survey | None = survey_result.scalar_one_or_none()
+            total_questions = len(survey.questions) if survey else 0
+            session_token = create_access_token(subject=str(existing_session.id))
+            response.status_code = status.HTTP_200_OK
+            return SessionInitResponse(
+                session_token=session_token,
+                session_id=str(existing_session.id),
+                persona=existing_session.persona,
+                survey_title=survey.title if survey else "",
+                participant_name=participant.name,
+                total_questions=total_questions,
+                current_question_index=existing_session.current_question_index,
+                state=existing_session.state,
+            )
+
     # Load survey + questions
     survey_result = await db.execute(
         select(Survey)
         .options(selectinload(Survey.questions))
         .where(Survey.id == participant.survey_id, Survey.is_active == True)  # noqa: E712
     )
-    survey: Survey | None = survey_result.scalar_one_or_none()
+    survey = survey_result.scalar_one_or_none()
     if not survey:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found or inactive")
 
@@ -64,8 +99,16 @@ async def init_session(
     if total_questions == 0:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Survey has no questions")
 
-    # Assign persona (avoid last 3 recent personas for this participant if retrievable)
-    persona = persona_manager.assign_random()
+    # Assign persona — avoid last 3 recent personas for this participant
+    recent_result = await db.execute(
+        select(VoiceSession)
+        .where(VoiceSession.participant_id == participant.id)
+        .order_by(VoiceSession.started_at.desc())
+        .limit(3)
+    )
+    recent_sessions = list(recent_result.scalars().all())
+    recent_names = [s.persona.get("name") for s in recent_sessions if s.persona and s.persona.get("name")]
+    persona = persona_manager.assign_random(recent_persona_names=recent_names or None)
 
     # Create DB session record
     client_ip = (
