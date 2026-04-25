@@ -20,6 +20,13 @@ class Settings(BaseSettings):
     # ── Redis ─────────────────────────────────────────────────────────────────
     redis_url: str = "redis://localhost:6379/0"
 
+    # ── Object Storage ────────────────────────────────────────────────────────
+    s3_bucket: str = ""
+    s3_region: str = "us-east-1"
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    s3_endpoint_url: str = ""
+
     # ── OpenAI ───────────────────────────────────────────────────────────────
     openai_api_key: str = ""
     openai_moderation_model: str = "text-moderation-stable"

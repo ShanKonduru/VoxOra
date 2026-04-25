@@ -28,6 +28,7 @@ from app.security.auth import decode_token
 from app.security.input_sanitizer import input_sanitizer
 from app.services.ai_orchestrator import orchestrator_service
 from app.services.moderation import moderation_service
+from app.services.storage_service import storage_service
 from app.services.state_machine import SESSION_STATE_TTL, SessionState, SurveyStateMachine
 from app.config import settings as _settings
 
@@ -311,6 +312,12 @@ async def voice_session_ws(websocket: WebSocket, session_id: uuid.UUID) -> None:
                             user_transcript=transcript,
                         )
 
+                        audio_url = await storage_service.upload_audio(
+                            session_id=str(session.id),
+                            question_index=sm.current_question_index,
+                            audio_bytes=audio_bytes,
+                        )
+
                         # 5. Log response
                         sm.transition(SessionState.LOGGING)
                         await sm.save(redis)
@@ -321,6 +328,7 @@ async def voice_session_ws(websocket: WebSocket, session_id: uuid.UUID) -> None:
                             question_index=sm.current_question_index,
                             transcript_raw=transcript,
                             transcript_clean=transcript,
+                            audio_url=audio_url,
                             sentiment_score=Decimal(f"{confidence:.3f}"),
                             was_refocused=refocus_count > 0,
                             refocus_count=refocus_count,

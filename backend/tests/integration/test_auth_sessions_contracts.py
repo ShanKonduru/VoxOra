@@ -921,6 +921,13 @@ def test_is16_confidence_pipeline_present_in_source() -> None:
     assert 'response_format="verbose_json"' in stt_source
 
 
+def test_is18_audio_upload_pipeline_present_in_source() -> None:
+    ws_source = inspect.getsource(websocket_module.voice_session_ws)
+
+    assert "storage_service.upload_audio(" in ws_source
+    assert "audio_url=audio_url" in ws_source
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # IS-12: PUT /api/surveys/{id}/questions/{q_id}
 # IS-13: Question order rebalancing on delete
