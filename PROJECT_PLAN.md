@@ -9,22 +9,29 @@
 
 ## Current Status — April 2026
 
-> **Phase 0 & Phase 1 scaffolding completed** via AI-assisted code generation.  
-> All application files (backend, frontend, AI pipeline, security, admin, DevOps) have been implemented and committed to `master`.  
-> Remaining phases (integration testing, performance tuning, UAT) require a live environment with real OpenAI credentials.
+> **Scaffolding completed and active hardening underway** *(Updated April 25, 2026)*.  
+> Core application scaffolding is complete across backend, frontend, AI pipeline, security, admin, and DevOps layers.  
+> Additional runtime hardening and focused integration validation are now in progress (auth/session contracts, route normalization, rate-limit verification), while full E2E/load/UAT phases still require live-environment execution.
 
 | Phase | Status | Completed |
 |---|---|---|
 | 0 — Foundation & Environment Setup | ✅ Done | April 2026 |
-| 1 — Backend Core & Database | ✅ Done (scaffolding) | April 2026 |
+| 1 — Backend Core & Database | 🟡 In Progress (scaffolding + hardening) | April 2026 / April 25 updates |
 | 2 — AI Orchestration Engine | ✅ Done (scaffolding) | April 2026 |
 | 3 — Frontend Participant Experience | ✅ Done (scaffolding) | April 2026 |
-| 4 — Security Hardening | ✅ Done (scaffolding) | April 2026 |
+| 4 — Security Hardening | 🟡 In Progress (rate-limit/auth transport hardening) | April 2026 / April 25 updates |
 | 5 — Admin Dashboard | ✅ Done (scaffolding) | April 2026 |
-| 6 — Integration & E2E Testing | ⏳ Pending | — |
+| 6 — Integration & E2E Testing | 🟡 Started (focused backend contract suite complete) | April 25, 2026 |
 | 7 — Performance Optimization | ⏳ Pending | — |
 | 8 — Deployment & DevOps | ✅ Done (scaffolding) | April 2026 |
 | 9 — UAT & Production Launch | ⏳ Pending | — |
+
+### April 25 Execution Notes
+
+- Completed: API route mounting normalization, session/auth response-contract fixes, refresh cookie extraction fix, websocket response `question_index` persistence fix.
+- Completed: route-level rate limiting on critical write endpoints (`auth`, `sessions/init`, `surveys`, `participants`, `admin/reminders`).
+- Completed: focused backend validation suite (`backend/tests/integration/test_auth_sessions_contracts.py`) with passing checks for routing, auth refresh, session-init contract, and rate limits.
+- Remaining high-priority items: DB-backed refresh token revocation/rotation persistence, Alembic baseline migrations, reconnect/flagged edge-case handling, websocket per-IP Redis connection limits.
 
 ---
 

@@ -6,20 +6,25 @@
 
 ## Project Status
 
-> **Phase 1 Scaffolding — COMPLETE** *(April 2026)*
+> **Scaffolding complete, hardening in progress** *(Updated April 25, 2026)*
 
-All application code, configuration, and infrastructure files have been implemented. The full backend, frontend, and DevOps scaffolding is committed to the `master` branch and ready for environment bring-up.
+Core backend, frontend, AI, and DevOps scaffolding is complete. High-priority runtime fixes and focused contract validation have been implemented on top of scaffolding in the current branch state.
 
 | Layer | Status | Notes |
 |---|---|---|
-| Backend (FastAPI, SQLAlchemy, Redis) | ✅ Complete | Models, schemas, services, security, API routes, tests |
+| Backend (FastAPI, SQLAlchemy, Redis) | ✅ Complete + Hardening | Route mounting fixed, session/auth contracts aligned, websocket persistence patch |
 | Frontend (React 18, Vite 5, Zustand) | ✅ Complete | Pages, components, hooks, stores, services |
 | AI Pipeline (Whisper → GPT-4o → TTS) | ✅ Complete | `ai_orchestrator.py`, `state_machine.py`, prompts, personas |
-| Security Hardening | ✅ Complete | JWT auth, input sanitizer, rate limiter, jailbreak blocklist |
+| Security Hardening | 🟡 In Progress | Rate limits applied to key write routes; DB-backed refresh revocation still pending |
 | Admin Dashboard | ✅ Complete | Stats, participant table, reminder panel, response viewer |
 | Docker Compose (dev + prod) | ✅ Complete | PostgreSQL 16, Redis 7, Nginx, 4-worker Uvicorn |
-| CI/CD (GitHub Actions) | ✅ Complete | PR lint/test gate + GHCR push + SSH deploy |
+| CI/CD (GitHub Actions) | ✅ Updated | PR checks on `main` + `develop`; focused auth/session contract tests added |
 | Copilot Instructions | ✅ Complete | Backend, frontend, security, voice-pipeline instruction files |
+
+### Recent Validation Updates
+
+- Focused backend contract suite added and passing: `backend/tests/integration/test_auth_sessions_contracts.py`.
+- Validated areas include route prefix correctness, auth refresh cookie flow, session-init response contract, and rate-limit enforcement checks.
 
 **Next steps:** run `003_setup` to install dependencies, copy `.env.example` → `.env`, then `004_run` to bring up the full stack.
 

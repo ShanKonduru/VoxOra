@@ -4,6 +4,7 @@
 > **Estimation Scale:** Story Points (Fibonacci) — 1 SP ≈ 0.5 day of engineering effort for a mid-senior engineer  
 > **Effort Key:** SP = Story Points | D = Days | W = Weeks  
 > **Complexity Labels:** XS (1–2 SP) | S (3 SP) | M (5 SP) | L (8 SP) | XL (13 SP)
+> **Task Status Markers:** `[DONE]` completed | `[PARTIAL]` implemented in part | `[PENDING]` not yet started
 
 ---
 
@@ -15,12 +16,12 @@
 | Epic | Name | Total SP | Est. Duration | Status |
 |---|---|---|---|---|
 | E1 | Project Foundation | 42 SP | 2 weeks | ✅ Done |
-| E2 | Backend API & Database | 89 SP | 4 weeks | ✅ Done (scaffolding) |
+| E2 | Backend API & Database | 89 SP | 4 weeks | In Progress (hardening underway) |
 | E3 | AI Orchestration Engine | 97 SP | 5 weeks | ✅ Done (scaffolding) |
 | E4 | Frontend Participant Experience | 76 SP | 5 weeks | ✅ Done (scaffolding) |
-| E5 | Security Hardening | 68 SP | 4 weeks | ✅ Done (scaffolding) |
+| E5 | Security Hardening | 68 SP | 4 weeks | In Progress (rate-limit and auth transport updates) |
 | E6 | Admin Dashboard | 64 SP | 4 weeks | ✅ Done (scaffolding) |
-| E7 | Integration & Testing | 55 SP | 4 weeks | ⏳ Pending |
+| E7 | Integration & Testing | 55 SP | 4 weeks | In Progress (focused backend contracts validated) |
 | E8 | DevOps & Deployment | 52 SP | 4 weeks | ✅ Done (scaffolding) |
 | **TOTAL** | | **543 SP** | **~28 weeks** | |
 
@@ -64,9 +65,11 @@
 
 | Task | Description | SP | Complexity |
 |---|---|---|---|
-| T1.1.2.1 | Write GitHub Actions `ci.yml`: backend lint + test job | 2 | S |
-| T1.1.2.2 | Write GitHub Actions `ci.yml`: frontend lint + build job | 2 | S |
-| **Subtotal** | | **4 SP** | |
+| T1.1.2.1 | Write GitHub Actions `ci.yml`: backend lint + test job `[DONE]` | 2 | S |
+| T1.1.2.2 | Write GitHub Actions `ci.yml`: frontend lint + build job `[DONE]` | 2 | S |
+| T1.1.2.3 | Expand PR workflow trigger to `main` + `develop` `[DONE]` | 1 | XS |
+| T1.1.2.4 | Add focused backend contract test job in CI `[DONE]` | 1 | XS |
+| **Subtotal** | | **6 SP** | |
 
 ---
 
@@ -247,13 +250,14 @@
 
 | Task | Description | SP | Complexity |
 |---|---|---|---|
-| T2.4.1.1 | Implement `POST /api/sessions/init`: validate token, check status, create session | 5 | M |
+| T2.4.1.1 | Implement `POST /api/sessions/init`: validate token, check status, create session `[PARTIAL]` | 5 | M |
 | T2.4.1.2 | Implement persona assignment on session init (calls `PersonaManager`) | 3 | S |
 | T2.4.1.3 | Implement session JWT generation (short-lived, session-scoped) | 2 | S |
 | T2.4.1.4 | Implement Redis session state write on init | 2 | S |
-| T2.4.1.5 | Implement `GET /api/sessions/{id}`: return current state for reconnection | 2 | S |
-| T2.4.1.6 | Handle all edge cases: COMPLETED, IN_PROGRESS, EXPIRED, FLAGGED | 3 | S |
-| T2.4.1.7 | Write unit tests for all session init edge cases (6 scenarios) | 3 | S |
+| T2.4.1.5 | Implement `GET /api/sessions/{id}`: return current state for reconnection `[PARTIAL]` | 2 | S |
+| T2.4.1.6 | Handle all edge cases: COMPLETED, IN_PROGRESS, EXPIRED, FLAGGED `[PARTIAL]` | 3 | S |
+| T2.4.1.7 | Write unit tests for all session init edge cases (6 scenarios) `[PARTIAL]` | 3 | S |
+| T2.4.1.8 | Align session response contract fields (`started_at`, `state`, required payload fields) `[DONE]` | 2 | S |
 | **Subtotal** | | **20 SP** | |
 
 ---
@@ -277,11 +281,12 @@
 |---|---|---|---|
 | T2.5.1.1 | Implement `POST /api/auth/login` with bcrypt verification | 3 | S |
 | T2.5.1.2 | Implement JWT access token creation and signing | 2 | S |
-| T2.5.1.3 | Implement refresh token: create, store hash in DB, set httpOnly cookie | 3 | S |
-| T2.5.1.4 | Implement `POST /api/auth/refresh` with rotation (old token invalidated) | 3 | S |
-| T2.5.1.5 | Implement `POST /api/auth/logout`: revoke refresh token | 1 | XS |
+| T2.5.1.3 | Implement refresh token: create, store hash in DB, set httpOnly cookie `[PARTIAL]` | 3 | S |
+| T2.5.1.4 | Implement `POST /api/auth/refresh` with rotation (old token invalidated) `[PARTIAL]` | 3 | S |
+| T2.5.1.5 | Implement `POST /api/auth/logout`: revoke refresh token `[PARTIAL]` | 1 | XS |
 | T2.5.1.6 | Implement `get_current_admin` FastAPI dependency | 2 | S |
 | T2.5.1.7 | Write `create_admin.py` script for initial admin user provisioning | 1 | XS |
+| T2.5.1.8 | Normalize API router mounting to prevent duplicate `/api/*` path prefixing `[DONE]` | 1 | XS |
 | **Subtotal** | | **15 SP** | |
 
 ---
@@ -298,8 +303,8 @@
 |---|---|---|---|
 | T2.6.1.1 | Implement `WS /ws/session/{session_id}` FastAPI WebSocket handler | 3 | S |
 | T2.6.1.2 | Implement session token authentication on WebSocket connect | 2 | S |
-| T2.6.1.3 | Implement connection registry: track active connections in Redis | 3 | S |
-| T2.6.1.4 | Implement graceful disconnect handling and cleanup | 2 | S |
+| T2.6.1.3 | Implement connection registry: track active connections in Redis `[PENDING]` | 3 | S |
+| T2.6.1.4 | Implement graceful disconnect handling and cleanup `[PARTIAL]` | 2 | S |
 | **Subtotal** | | **10 SP** | |
 
 ---
@@ -421,11 +426,12 @@
 
 | Task | Description | SP | Complexity |
 |---|---|---|---|
-| T3.5.1.1 | Implement `ResponseLogger.log(session, question, transcript, metadata)` | 3 | S |
+| T3.5.1.1 | Implement `ResponseLogger.log(session, question, transcript, metadata)` `[PARTIAL]` | 3 | S |
 | T3.5.1.2 | Implement session completion: set status to COMPLETED, record `duration_seconds`, `completed_at` | 2 | S |
 | T3.5.1.3 | Implement `CLOSING` state: AI delivers formal closing statement, then COMPLETED | 2 | S |
 | T3.5.1.4 | Update participant `status` to COMPLETED on session completion | 1 | XS |
 | T3.5.1.5 | Write integration test: full 3-question session → all responses logged → COMPLETED | 2 | S |
+| T3.5.1.6 | Persist required `question_index` on websocket response insert `[DONE]` | 1 | XS |
 | **Subtotal** | | **10 SP** | |
 
 ---
@@ -632,12 +638,12 @@
 
 | Task | Description | SP | Complexity |
 |---|---|---|---|
-| T5.3.1.1 | Install and configure `slowapi` with Redis backend | 2 | S |
-| T5.3.1.2 | Apply rate limit to `POST /api/sessions/init` (10/min per IP) | 1 | XS |
-| T5.3.1.3 | Apply rate limit to `POST /api/auth/login` (5/min per IP) | 1 | XS |
-| T5.3.1.4 | Implement WebSocket connection counter per IP in Redis | 3 | S |
-| T5.3.1.5 | Apply rate limit to admin endpoints (100/min per user) | 1 | XS |
-| T5.3.1.6 | Write tests: verify 429 returned after threshold, `Retry-After` header present | 2 | S |
+| T5.3.1.1 | Install and configure `slowapi` with Redis backend `[DONE]` | 2 | S |
+| T5.3.1.2 | Apply rate limit to `POST /api/sessions/init` (10/min per IP) `[DONE]` | 1 | XS |
+| T5.3.1.3 | Apply rate limit to `POST /api/auth/login` (5/min per IP) `[DONE]` | 1 | XS |
+| T5.3.1.4 | Implement WebSocket connection counter per IP in Redis `[PENDING]` | 3 | S |
+| T5.3.1.5 | Apply rate limit to admin endpoints (100/min per user) `[PARTIAL]` | 1 | XS |
+| T5.3.1.6 | Write tests: verify 429 returned after threshold, `Retry-After` header present `[PARTIAL]` | 2 | S |
 | **Subtotal** | | **10 SP** | |
 
 ---
@@ -783,6 +789,7 @@
 | 7.1.3 | Moderation integration: hate speech → session TERMINATED → WS close | Mock moderation API, send flagged content, verify DB + WS close | 3 |
 | 7.1.4 | Rate limiter integration with Redis | Send N+1 requests, verify 429 | 3 |
 | 7.1.5 | Admin API: full survey CRUD + participant + reminder lifecycle | Write pytest for each endpoint | 4 |
+| 7.1.6 | Focused auth/session contract regression suite | Add and run `test_auth_sessions_contracts.py` checks for routing, cookie refresh, response contracts, and rate limits `[DONE]` | 3 |
 | **Subtotal** | | | **18 SP** |
 
 ---
