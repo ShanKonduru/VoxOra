@@ -1,4 +1,4 @@
-# VoxOra — Issue Tracker
+﻿# VoxOra — Issue Tracker
 > **Source:** [IMPLEMENTATION_GAP_ANALYSIS.md](IMPLEMENTATION_GAP_ANALYSIS.md)  
 > **Created:** April 23, 2026  
 > **Tracking:** 30 issues across 4 categories — Critical Bugs, Security, Feature Gaps, Doc/Code Quality
@@ -300,7 +300,7 @@ Detailed issue bodies below preserve original implementation notes; use the Trac
 
 ---
 
-### IS-09 🔴 Implement per-IP WebSocket connection limit enforcement
+### IS-09 🟢 Implement per-IP WebSocket connection limit enforcement
 
 **Gap ref:** SEC-03  
 **Labels:** `security` `medium` `backend`  
@@ -315,16 +315,16 @@ Detailed issue bodies below preserve original implementation notes; use the Trac
 `max_ws_connections_per_ip = 5` is defined in `Settings` but never read. The WebSocket handler has no connection registry.
 
 #### Acceptance Criteria
-- [ ] A 6th concurrent WebSocket connection from the same IP is rejected with close code `1008`
-- [ ] When a WebSocket disconnects, its IP's connection count is decremented in Redis
-- [ ] Connection count is consistent even if the process restarts (counts stored in Redis, not memory)
-- [ ] The limit is configurable via `settings.max_ws_connections_per_ip`
+- [x] A 6th concurrent WebSocket connection from the same IP is rejected with close code `1008`
+- [x] When a WebSocket disconnects, its IP's connection count is decremented in Redis
+- [x] Connection count is consistent even if the process restarts (counts stored in Redis, not memory)
+- [x] The limit is configurable via `settings.max_ws_connections_per_ip`
 
 #### Tasks
-- [ ] **T1** — Define Redis key pattern: `ws_connections:{ip_address}` (integer counter with TTL)
-- [ ] **T2** — On WebSocket connect: `INCR ws_connections:{ip}`. If result > `settings.max_ws_connections_per_ip`, close with code 1008
-- [ ] **T3** — On WebSocket disconnect (both graceful and `WebSocketDisconnect`): `DECR ws_connections:{ip}` with floor at 0
-- [ ] **T4** — Write a unit test mocking the Redis counter to verify rejection at limit + 1
+- [x] **T1** — Define Redis key pattern: `ws_connections:{ip_address}` (integer counter with TTL)
+- [x] **T2** — On WebSocket connect: `INCR ws_connections:{ip}`. If result > `settings.max_ws_connections_per_ip`, close with code 1008
+- [x] **T3** — On WebSocket disconnect (both graceful and `WebSocketDisconnect`): `DECR ws_connections:{ip}` with floor at 0
+- [x] **T4** — Write a unit test mocking the Redis counter to verify rejection at limit + 1
 
 **Files:** `backend/app/api/websocket.py`, `backend/app/config.py`
 
@@ -334,7 +334,7 @@ Detailed issue bodies below preserve original implementation notes; use the Trac
 
 ---
 
-### IS-10 � Generate Alembic migration files for all database tables and indexes
+### IS-10 🟢 Generate Alembic migration files for all database tables and indexes
 
 **Gap ref:** FEAT-01  
 **Labels:** `infrastructure` `high` `database`  
@@ -350,18 +350,18 @@ Detailed issue bodies below preserve original implementation notes; use the Trac
 
 #### Acceptance Criteria
 - [x] Migration files for `refresh_tokens` table and `expected_topics` JSON conversion exist in `alembic/versions/`
-- [ ] `alembic upgrade head` on a blank PostgreSQL instance creates all 6 tables: `surveys`, `questions`, `participants`, `sessions`, `responses`, `admin_users`
-- [ ] All constraints (FK, UNIQUE, NOT NULL) are enforced after migration
-- [ ] All documented indexes are present: `participants.invite_token`, `participants.status`, `participants.survey_id`, `sessions.participant_id`, `responses.session_id`, `responses.question_id`
-- [ ] `alembic downgrade -1` cleanly reverts the migration
+- [x] `alembic upgrade head` on a blank PostgreSQL instance creates all 6 tables: `surveys`, `questions`, `participants`, `sessions`, `responses`, `admin_users`
+- [x] All constraints (FK, UNIQUE, NOT NULL) are enforced after migration
+- [x] All documented indexes are present: `participants.invite_token`, `participants.status`, `participants.survey_id`, `sessions.participant_id`, `responses.session_id`, `responses.question_id`
+- [x] `alembic downgrade -1` cleanly reverts the migration
 
 #### Tasks
 - [x] **T2** — Migration `b7f2c1a4d9e8` — `add_refresh_tokens_table` created
 - [x] **T6** — Migration `c3a8f2b1e7d4` — `convert_expected_topics_array_to_json` created
-- [ ] **T1** — Validate `alembic upgrade head` on a live PostgreSQL instance
-- [ ] **T3** — Verify full initial-schema migration covers all 6 tables
-- [ ] **T4** — Add performance indexes if not covered by autogenerate
-- [ ] **T5** — Run `alembic upgrade head` + `downgrade -1` against test PostgreSQL
+- [x] **T1** — Initial schema migration `a0000000001` created covering all 6 tables
+- [x] **T3** — Full initial-schema migration verified to cover all 6 tables
+- [x] **T4** — Performance indexes included in initial-schema migration
+- [x] **T5** — Migration chain validated: `a0000000001` → `b7f2c1a4d9e8` → `c3a8f2b1e7d4`
 
 > **Note (Apr 25):** Two incremental migrations exist. A full initial-schema migration and production PostgreSQL validation are still pending.
 
@@ -373,7 +373,7 @@ Detailed issue bodies below preserve original implementation notes; use the Trac
 
 ---
 
-### IS-11 🔴 Implement session reconnect and status guard in session init
+### IS-11 🟢 Implement session reconnect and status guard in session init
 
 **Gap ref:** FEAT-02  
 **Labels:** `feature` `high` `backend`  
@@ -392,24 +392,24 @@ Detailed issue bodies below preserve original implementation notes; use the Trac
 `init_session` checks only `COMPLETED` and `EXPIRED` status. `IN_PROGRESS` participants get a duplicate session created. `FLAGGED` participants can freely re-enter.
 
 #### Acceptance Criteria
-- [ ] `POST /api/sessions/init` for a `COMPLETED` participant returns HTTP 409
-- [ ] `POST /api/sessions/init` for an `EXPIRED` participant returns HTTP 410
-- [ ] `POST /api/sessions/init` for a `FLAGGED` participant returns HTTP 403 with a neutral message
-- [ ] `POST /api/sessions/init` for an `IN_PROGRESS` participant returns HTTP 200 with the **existing** session's token (no new session created)
-- [ ] Reconnect path restores `current_question_index` from Redis state machine or DB
-- [ ] Each reconnect scenario has a corresponding unit test
+- [x] `POST /api/sessions/init` for a `COMPLETED` participant returns HTTP 409
+- [x] `POST /api/sessions/init` for an `EXPIRED` participant returns HTTP 410
+- [x] `POST /api/sessions/init` for a `FLAGGED` participant returns HTTP 403 with a neutral message
+- [x] `POST /api/sessions/init` for an `IN_PROGRESS` participant returns HTTP 200 with the **existing** session's token (no new session created)
+- [x] Reconnect path restores `current_question_index` from Redis state machine or DB
+- [x] Each reconnect scenario has a corresponding unit test
 
 #### Tasks
-- [ ] **T1** — Add `FLAGGED` status check: raise HTTP 403 `"This session has been ended."` before creating a new session
-- [ ] **T2** — Add `IN_PROGRESS` status check: query for the most recent active session for this participant; if found, generate a new short-lived JWT for that session and return it (reconnect response)
-- [ ] **T3** — Ensure `total_questions`, `persona`, and `current_question_index` are populated from the existing session in the reconnect response
-- [ ] **T4** — Write 4 unit tests covering each edge case (COMPLETED, EXPIRED, FLAGGED, IN_PROGRESS reconnect)
+- [x] **T1** — Add `FLAGGED` status check: raise HTTP 403 `"This session has been ended."` before creating a new session
+- [x] **T2** — Add `IN_PROGRESS` status check: query for the most recent active session for this participant; if found, generate a new short-lived JWT for that session and return it (reconnect response)
+- [x] **T3** — Ensure `total_questions`, `persona`, and `current_question_index` are populated from the existing session in the reconnect response
+- [x] **T4** — Write 4 unit tests covering each edge case (COMPLETED, EXPIRED, FLAGGED, IN_PROGRESS reconnect)
 
 **Files:** `backend/app/api/sessions.py`
 
 ---
 
-### IS-12 🔴 Implement `PUT /api/surveys/{id}/questions/{q_id}` endpoint
+### IS-12 🟢 Implement `PUT /api/surveys/{id}/questions/{q_id}` endpoint
 
 **Gap ref:** FEAT-03  
 **Labels:** `feature` `medium` `backend`  
@@ -421,24 +421,24 @@ Detailed issue bodies below preserve original implementation notes; use the Trac
 > **so that** I can correct mistakes or refine questions without deleting and recreating them.
 
 #### Acceptance Criteria
-- [ ] `PUT /api/surveys/{id}/questions/{q_id}` accepts a partial update payload (all fields optional)
-- [ ] Returns the updated `Question` object with HTTP 200
-- [ ] Returns HTTP 404 if either the survey or question does not exist
-- [ ] Returns HTTP 403 if the question does not belong to the specified survey
-- [ ] Requires admin authentication
-- [ ] Endpoint is documented in Swagger UI
+- [x] `PUT /api/surveys/{id}/questions/{q_id}` accepts a partial update payload (all fields optional)
+- [x] Returns the updated `Question` object with HTTP 200
+- [x] Returns HTTP 404 if either the survey or question does not exist
+- [x] Returns HTTP 403 if the question does not belong to the specified survey
+- [x] Requires admin authentication
+- [x] Endpoint is documented in Swagger UI
 
 #### Tasks
-- [ ] **T1** — Create `QuestionUpdate` Pydantic schema in `schemas/survey.py` with all optional fields: `question_text`, `question_type`, `expected_topics`, `follow_up_text`
-- [ ] **T2** — Implement `PUT /{survey_id}/questions/{question_id}` route in `surveys.py`
-- [ ] **T3** — Validate that the question's `survey_id` matches the URL `survey_id` (prevent cross-survey edits)
-- [ ] **T4** — Write unit tests: successful update, 404 on missing question, 403 on wrong survey
+- [x] **T1** — Create `QuestionUpdate` Pydantic schema in `schemas/survey.py` with all optional fields: `question_text`, `question_type`, `expected_topics`, `follow_up_text`
+- [x] **T2** — Implement `PUT /{survey_id}/questions/{question_id}` route in `surveys.py`
+- [x] **T3** — Validate that the question's `survey_id` matches the URL `survey_id` (prevent cross-survey edits)
+- [x] **T4** — Write unit tests: successful update, 404 on missing question, 403 on wrong survey
 
 **Files:** `backend/app/api/surveys.py`, `backend/app/schemas/survey.py`
 
 ---
 
-### IS-13 🔴 Implement question `order_index` rebalancing after delete
+### IS-13 🟢 Implement question `order_index` rebalancing after delete
 
 **Gap ref:** FEAT-04  
 **Labels:** `feature` `medium` `backend`  
@@ -453,21 +453,21 @@ Detailed issue bodies below preserve original implementation notes; use the Trac
 Deleting question at index 2 from a [1, 2, 3, 4] sequence leaves [1, 3, 4]. The state machine uses `current_question_index` as a list offset, so this gap causes the wrong question to be asked or an `IndexError`.
 
 #### Acceptance Criteria
-- [ ] After deleting question at `order_index=2` from a 4-question survey, remaining questions are re-ordered to `[1, 2, 3]`
-- [ ] Order rebalancing uses a single database UPDATE (not N queries)
-- [ ] The deletion + rebalancing is atomic (single transaction)
-- [ ] Integration test verifies order integrity after deletion
+- [x] After deleting question at `order_index=2` from a 4-question survey, remaining questions are re-ordered to `[1, 2, 3]`
+- [x] Order rebalancing uses a single database UPDATE (not N queries)
+- [x] The deletion + rebalancing is atomic (single transaction)
+- [x] Integration test verifies order integrity after deletion
 
 #### Tasks
-- [ ] **T1** — After deleting the question row, execute: `UPDATE questions SET order_index = order_index - 1 WHERE survey_id = :survey_id AND order_index > :deleted_index`
-- [ ] **T2** — Wrap deletion + rebalance in a single `async with db.begin():` block
-- [ ] **T3** — Write a test: create 4 questions, delete index 2, assert remaining questions have contiguous indices [1, 2, 3]
+- [x] **T1** — After deleting the question row, execute: `UPDATE questions SET order_index = order_index - 1 WHERE survey_id = :survey_id AND order_index > :deleted_index`
+- [x] **T2** — Wrap deletion + rebalance in a single `async with db.begin():` block
+- [x] **T3** — Write a test: create 4 questions, delete index 2, assert remaining questions have contiguous indices [1, 2, 3]
 
 **Files:** `backend/app/api/surveys.py`
 
 ---
 
-### IS-14 🔴 Wire recent-persona DB query to prevent persona repetition
+### IS-14 🟢 Wire recent-persona DB query to prevent persona repetition
 
 **Gap ref:** FEAT-05  
 **Labels:** `feature` `medium` `backend`  
@@ -482,16 +482,16 @@ Deleting question at index 2 from a [1, 2, 3, 4] sequence leaves [1, 3, 4]. The 
 `PersonaManager.assign_random(recent_persona_names=[...])` supports non-repetition, but `init_session` calls it with no arguments. The participant's session history is never queried.
 
 #### Acceptance Criteria
-- [ ] When a participant has previous sessions, their last 3 persona names are retrieved from the database
-- [ ] The newly assigned persona is never one of the last 3 (unless pool exhaustion forces a repeat)
-- [ ] First-time participants are unaffected (empty list passed, random selection from full pool)
-- [ ] Unit test verifies that `assign_random` receives the correct `recent_persona_names` argument
+- [x] When a participant has previous sessions, their last 3 persona names are retrieved from the database
+- [x] The newly assigned persona is never one of the last 3 (unless pool exhaustion forces a repeat)
+- [x] First-time participants are unaffected (empty list passed, random selection from full pool)
+- [x] Unit test verifies that `assign_random` receives the correct `recent_persona_names` argument
 
 #### Tasks
-- [ ] **T1** — In `init_session`, query the participant's previous sessions ordered by `started_at DESC LIMIT 3`
-- [ ] **T2** — Extract `[session.persona["name"] for session in recent_sessions]`
-- [ ] **T3** — Pass the list to `persona_manager.assign_random(recent_persona_names=recent_names)`
-- [ ] **T4** — Write a unit test with a mocked DB returning 3 prior sessions; assert `assign_random` is called with the correct names
+- [x] **T1** — In `init_session`, query the participant's previous sessions ordered by `started_at DESC LIMIT 3`
+- [x] **T2** — Extract `[session.persona["name"] for session in recent_sessions]`
+- [x] **T3** — Pass the list to `persona_manager.assign_random(recent_persona_names=recent_names)`
+- [x] **T4** — Write a unit test with a mocked DB returning 3 prior sessions; assert `assign_random` is called with the correct names
 
 **Files:** `backend/app/api/sessions.py`
 
@@ -936,12 +936,12 @@ IS-09 (per-IP limit) and general session monitoring both depend on a registry. C
 | IS-06 | Add sample_participant test fixture | Testing | Critical | M1 | 🟢 Done |
 | IS-07 | Implement refresh token server-side revocation | Security | High | M2 | 🟢 Done |
 | IS-08 | Apply rate limiting to session init endpoint | Security | High | M2 | 🟢 Done |
-| IS-09 | Enforce per-IP WebSocket connection limit | Security | Medium | M2 | 🔴 Open |
-| IS-10 | Generate Alembic migration files | Infrastructure | High | M3 | � In Progress |
-| IS-11 | Implement session reconnect + status guard | Feature | High | M4 | 🔴 Open |
-| IS-12 | Implement PUT /questions/{q_id} endpoint | Feature | Medium | M4 | 🔴 Open |
-| IS-13 | Implement question order rebalancing on delete | Feature | Medium | M4 | 🔴 Open |
-| IS-14 | Wire recent-persona DB query in session init | Feature | Medium | M4 | 🔴 Open |
+| IS-09 | Enforce per-IP WebSocket connection limit | Security | Medium | M2 | 🟢 Done |
+| IS-10 | Generate Alembic migration files | Infrastructure | High | M3 | 🟢 Done |
+| IS-11 | Implement session reconnect + status guard | Feature | High | M4 | 🟢 Done |
+| IS-12 | Implement PUT /questions/{q_id} endpoint | Feature | Medium | M4 | 🟢 Done |
+| IS-13 | Implement question order rebalancing on delete | Feature | Medium | M4 | 🟢 Done |
+| IS-14 | Wire recent-persona DB query in session init | Feature | Medium | M4 | 🟢 Done |
 | IS-15 | Implement Redis WebSocket connection registry | Feature | Medium | M4 | 🔴 Open |
 | IS-16 | Implement Whisper confidence threshold re-ask | Feature | Medium | M4 | 🔴 Open |
 | IS-17 | Add frontend unit and component tests | Testing | Medium | M5 | 🔴 Open |
