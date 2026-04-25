@@ -1,11 +1,20 @@
 import uuid
 from datetime import datetime, timezone
+from enum import Enum
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+
+class ParticipantStatus(str, Enum):
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    FLAGGED = "FLAGGED"
+    EXPIRED = "EXPIRED"
 
 
 class Participant(Base):

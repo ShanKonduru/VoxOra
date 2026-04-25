@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
 from app.database import get_db
 from app.models.participant import Participant, ParticipantStatus
 from app.models.session import Session as VoiceSession
@@ -18,6 +16,7 @@ from app.schemas.session import (
     SessionStateResponse,
 )
 from app.security.auth import create_access_token, get_current_admin
+from app.security.rate_limiter import limiter
 from app.services.persona_manager import persona_manager
 from app.services.state_machine import SessionState, SurveyStateMachine
 from app.database import get_redis
@@ -26,6 +25,7 @@ router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 
 
 @router.post("/init", response_model=SessionInitResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
 async def init_session(
     body: SessionInitRequest,
     request: Request,
@@ -100,7 +100,10 @@ async def init_session(
         session_id=str(session.id),
         persona=persona.to_dict(),
         survey_title=survey.title,
+        participant_name=participant.name,
         total_questions=total_questions,
+        current_question_index=0,
+        state=SessionState.GREETING.value,
     )
 
 
@@ -118,10 +121,26 @@ async def get_session_state(
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
 
+    participant_result = await db.execute(
+        select(Participant).where(Participant.id == session.participant_id)
+    )
+    participant: Participant | None = participant_result.scalar_one_or_none()
+    if not participant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Participant not found")
+
+    survey_result = await db.execute(
+        select(Survey).where(Survey.id == participant.survey_id)
+    )
+    survey: Survey | None = survey_result.scalar_one_or_none()
+    if not survey:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
+
     return SessionStateResponse(
-        session_id=str(session.id),
+        session_id=session.id,
         state=session.state,
         current_question_index=session.current_question_index,
+        total_questions=len(survey.questions),
+        persona=session.persona,
         is_flagged=session.is_flagged,
-        created_at=session.created_at,
+        started_at=session.started_at,
     )

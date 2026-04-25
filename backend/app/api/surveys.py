@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +19,7 @@ from app.schemas.survey import (
     SurveyUpdate,
 )
 from app.security.auth import get_current_admin
+from app.security.rate_limiter import limiter
 
 router = APIRouter(prefix="/api/surveys", tags=["surveys"])
 
@@ -49,7 +50,9 @@ async def get_survey(
 # ── Create survey ─────────────────────────────────────────────────────────────
 
 @router.post("/", response_model=SurveyResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("20/minute")
 async def create_survey(
+    request: Request,
     body: SurveyCreate,
     db: AsyncSession = Depends(get_db),
     admin: AdminUser = Depends(get_current_admin),
@@ -81,7 +84,9 @@ async def create_survey(
 # ── Update survey ─────────────────────────────────────────────────────────────
 
 @router.put("/{survey_id}", response_model=SurveyResponse)
+@limiter.limit("30/minute")
 async def update_survey(
+    request: Request,
     survey_id: uuid.UUID,
     body: SurveyUpdate,
     db: AsyncSession = Depends(get_db),
@@ -102,7 +107,9 @@ async def update_survey(
 # ── Delete survey (soft delete) ───────────────────────────────────────────────
 
 @router.delete("/{survey_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("20/minute")
 async def delete_survey(
+    request: Request,
     survey_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     _: AdminUser = Depends(get_current_admin),
@@ -119,7 +126,9 @@ async def delete_survey(
     response_model=SurveyResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("30/minute")
 async def add_question(
+    request: Request,
     survey_id: uuid.UUID,
     body: QuestionCreate,
     db: AsyncSession = Depends(get_db),
@@ -143,7 +152,9 @@ async def add_question(
 # ── Delete question ───────────────────────────────────────────────────────────
 
 @router.delete("/{survey_id}/questions/{question_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("30/minute")
 async def delete_question(
+    request: Request,
     survey_id: uuid.UUID,
     question_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),

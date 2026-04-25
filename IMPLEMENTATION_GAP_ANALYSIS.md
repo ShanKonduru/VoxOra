@@ -556,3 +556,66 @@ This is an environment readiness issue and should be resolved before using test 
 ---
 
 *Analysis performed by reviewing all backend models, API routes, services, security modules, frontend hooks/stores/pages, test fixtures, CI workflows, and cross-referencing against `README.md`, `PROJECT_PLAN.md`, and `WORK_BREAKDOWN_STRUCTURE.md`.*
+
+---
+
+## Part 7 — Implementation Update (April 25, 2026)
+
+### 7.1 Implemented in Code
+
+The following high-priority fixes from Parts 1–4 are now implemented:
+
+1. **Route prefix normalization**
+    - Removed double-prefix mounting at app startup.
+    - API routers are now included without duplicate `prefix` values.
+
+2. **Session contract correctness**
+    - `SessionInitResponse` now returns required fields: `participant_name`, `current_question_index`, and `state`.
+    - Session state endpoint now returns `started_at` (not `created_at`) and includes required schema fields.
+
+3. **WebSocket response persistence integrity**
+    - Added `question_index` assignment when creating `QuestionResponse` entries.
+
+4. **Refresh-token cookie handling**
+    - `/api/auth/refresh` now reads `voxora_refresh` from cookie via FastAPI `Cookie(...)`.
+
+5. **Rate limiting hardening (route-level decorators)**
+    - Applied `@limiter.limit(...)` to critical write endpoints in `auth`, `sessions`, `surveys`, `participants`, and `admin` routes.
+
+6. **Model import stability fixes**
+    - Added `backend/app/models/__init__.py` to ensure SQLAlchemy model registration consistency.
+    - Added `ParticipantStatus` enum in `participant.py` for route/model compatibility.
+
+7. **CI trigger and focused regression execution updates**
+    - CI pull request trigger updated to include both `main` and `develop`.
+    - Added explicit focused contract test execution step in CI.
+
+### 7.2 Validation Performed
+
+Focused implementation validation tests were added and executed:
+
+- `backend/tests/integration/test_auth_sessions_contracts.py`
+
+Validated behaviors:
+
+1. No double-prefixed route paths
+2. Login sets refresh cookie and returns access token
+3. Refresh endpoint enforces cookie presence
+4. Refresh succeeds with valid cookie
+5. Session init returns required response contract fields
+6. Rate-limit enforcement on login route
+7. Rate-limit enforcement on session-init route
+8. Regression guard for websocket response logging `question_index`
+
+**Latest focused run result:** `8 passed`.
+
+### 7.3 Remaining Priority Gaps
+
+Still pending from earlier sections:
+
+1. Refresh token DB-backed revocation/rotation persistence
+2. Alembic migration generation for baseline schema + indexes
+3. Session `IN_PROGRESS` reconnect behavior and `FLAGGED` handling
+4. Survey question update endpoint and order rebalancing on delete
+5. WebSocket per-IP connection registry/limit enforcement in Redis
+6. Broader integration suite modernization away from SQLite-incompatible Postgres types

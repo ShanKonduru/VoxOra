@@ -4,7 +4,7 @@ import secrets
 import uuid
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +20,7 @@ from app.schemas.participant import (
     ParticipantStatusUpdate,
 )
 from app.security.auth import get_current_admin
+from app.security.rate_limiter import limiter
 
 router = APIRouter(prefix="/api/participants", tags=["participants"])
 
@@ -31,7 +32,9 @@ router = APIRouter(prefix="/api/participants", tags=["participants"])
     response_model=List[ParticipantResponse],
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("20/minute")
 async def create_participants(
+    request: Request,
     body: ParticipantBulkCreate,
     db: AsyncSession = Depends(get_db),
     _: AdminUser = Depends(get_current_admin),
@@ -118,7 +121,9 @@ async def get_participant(
 # ── Update participant status ─────────────────────────────────────────────────
 
 @router.patch("/{participant_id}", response_model=ParticipantResponse)
+@limiter.limit("30/minute")
 async def update_participant_status(
+    request: Request,
     participant_id: uuid.UUID,
     body: ParticipantStatusUpdate,
     db: AsyncSession = Depends(get_db),

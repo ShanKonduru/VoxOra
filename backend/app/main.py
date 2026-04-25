@@ -48,12 +48,12 @@ from app.api.sessions import router as sessions_router  # noqa: E402
 from app.api.admin import router as admin_router  # noqa: E402
 from app.api.websocket import router as ws_router  # noqa: E402
 
-app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
-app.include_router(surveys_router, prefix="/api/surveys", tags=["surveys"])
-app.include_router(participants_router, prefix="/api/participants", tags=["participants"])
-app.include_router(sessions_router, prefix="/api/sessions", tags=["sessions"])
-app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
-app.include_router(ws_router, tags=["websocket"])
+app.include_router(auth_router)
+app.include_router(surveys_router)
+app.include_router(participants_router)
+app.include_router(sessions_router)
+app.include_router(admin_router)
+app.include_router(ws_router)
 
 
 @app.get("/health", tags=["health"])

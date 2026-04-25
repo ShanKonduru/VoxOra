@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +20,7 @@ from app.schemas.admin import (
     ReminderResultResponse,
 )
 from app.security.auth import get_current_admin
+from app.security.rate_limiter import limiter
 from app.services.reminder_service import reminder_service
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -96,7 +97,7 @@ async def list_flagged_sessions(
     q = (
         select(VoiceSession)
         .where(VoiceSession.is_flagged == True)  # noqa: E712
-        .order_by(VoiceSession.created_at.desc())
+        .order_by(VoiceSession.started_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
@@ -105,7 +106,9 @@ async def list_flagged_sessions(
 
 
 @router.post("/reminders", response_model=ReminderResultResponse)
+@limiter.limit("20/minute")
 async def send_reminders(
+    request: Request,
     body: ReminderRequest,
     db: AsyncSession = Depends(get_db),
     _: AdminUser = Depends(get_current_admin),

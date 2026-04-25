@@ -241,6 +241,7 @@ async def voice_session_ws(websocket: WebSocket, session_id: uuid.UUID) -> None:
                     question_response = QuestionResponse(
                         session_id=session.id,
                         question_id=current_q.id,
+                        question_index=sm.current_question_index,
                         transcript_raw=transcript,
                         transcript_clean=transcript,
                         was_refocused=refocus_count > 0,

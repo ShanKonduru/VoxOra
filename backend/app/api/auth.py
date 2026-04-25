@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +15,7 @@ from app.security.auth import (
     verify_password,
     get_current_admin,
 )
+from app.security.rate_limiter import limiter
 from app.config import settings
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -23,7 +24,9 @@ _REFRESH_COOKIE = "voxora_refresh"
 
 
 @router.post("/login", response_model=TokenResponse)
+@limiter.limit("5/minute")
 async def login(
+    request: Request,
     body: LoginRequest,
     response: Response,
     db: AsyncSession = Depends(get_db),
@@ -56,14 +59,13 @@ async def login(
 
 
 @router.post("/refresh", response_model=TokenResponse)
+@limiter.limit("20/minute")
 async def refresh_access_token(
+    request: Request,
     response: Response,
     db: AsyncSession = Depends(get_db),
-    refresh_token: str | None = None,
+    refresh_token: str | None = Cookie(default=None, alias=_REFRESH_COOKIE),
 ) -> TokenResponse:
-    from fastapi import Request  # local import to avoid circular
-
-    # NOTE: caller should pass cookie via request; extracted in middleware
     if not refresh_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -97,7 +99,9 @@ async def refresh_access_token(
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("20/minute")
 async def logout(
+    request: Request,
     response: Response,
     _: AdminUser = Depends(get_current_admin),
 ) -> None:
