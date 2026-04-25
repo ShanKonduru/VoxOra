@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import INET, JSONB, UUID
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -21,7 +21,7 @@ class Session(Base):
         index=True,
     )
     # JSONB: {name, gender, accent, voice_id, greeting_style}
-    persona: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    persona: Mapped[dict] = mapped_column(JSON, nullable=False)
     current_question_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     # GREETING | ASKING | LISTENING | PROCESSING | LOGGING | CLOSING | COMPLETED | TERMINATED
     state: Mapped[str] = mapped_column(String(50), nullable=False, default="GREETING")
@@ -34,7 +34,7 @@ class Session(Base):
         DateTime(timezone=True), nullable=True
     )
     duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    ip_address: Mapped[str | None] = mapped_column(INET, nullable=True)
+    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
     user_agent: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_flagged: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     flag_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)

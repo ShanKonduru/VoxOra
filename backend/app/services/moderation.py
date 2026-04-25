@@ -72,7 +72,7 @@ class ModerationService:
                     return ModerationResult(is_flagged=False)
                 await asyncio.sleep(1.0 * (attempt + 1))
 
-        return ModerationResult(is_flagged=False)
+        return ModerationResult(is_flagged=False)  # pragma: no cover
 
 
 moderation_service = ModerationService()

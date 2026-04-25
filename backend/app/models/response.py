@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import JSON
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -35,7 +36,7 @@ class Response(Base):
     was_refocused: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     refocus_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     moderation_flagged: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    moderation_categories: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    moderation_categories: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -28,7 +28,7 @@ class Question(Base):
     question_type: Mapped[str] = mapped_column(
         String(50), nullable=False, default="open_ended"
     )
-    expected_topics: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
+    expected_topics: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     follow_up_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

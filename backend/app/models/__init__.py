@@ -4,6 +4,7 @@ from app.database import Base
 from app.models.admin_user import AdminUser
 from app.models.participant import Participant
 from app.models.question import Question
+from app.models.refresh_token import RefreshToken
 from app.models.response import Response
 from app.models.session import Session
 from app.models.survey import Survey
@@ -13,6 +14,7 @@ __all__ = [
     "AdminUser",
     "Participant",
     "Question",
+    "RefreshToken",
     "Response",
     "Session",
     "Survey",

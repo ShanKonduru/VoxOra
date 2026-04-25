@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from app.services.persona_manager import PersonaManager
+from unittest.mock import patch
+
+import app.services.persona_manager as pm_module
+from app.services.persona_manager import DEFAULT_PERSONAS, PersonaManager
 
 
 def test_assign_random_returns_persona() -> None:
@@ -51,3 +54,23 @@ def test_persona_to_dict_and_from_dict_roundtrip() -> None:
     restored = type(persona).from_dict(d)
     assert restored.name == persona.name
     assert restored.voice_id == persona.voice_id
+
+
+def test_load_personas_falls_back_to_defaults_when_yaml_missing(tmp_path: object) -> None:
+    """Covers the final `return DEFAULT_PERSONAS` branch when personas.yaml is absent."""
+    with patch.object(pm_module, "__file__", str(tmp_path) + "/fake_service.py"):  # type: ignore[arg-type]
+        manager = PersonaManager()
+    expected_names = {p["name"] for p in DEFAULT_PERSONAS}
+    actual_names = {p.name for p in manager._personas}
+    assert actual_names == expected_names
+
+
+def test_load_personas_falls_back_on_yaml_parse_error() -> None:
+    """Covers the `except Exception: pass` handler and subsequent fallback."""
+    import yaml
+
+    with patch.object(yaml, "safe_load", side_effect=ValueError("bad yaml")):
+        manager = PersonaManager()
+    # Exception was caught; PersonaManager should still be usable via DEFAULT_PERSONAS
+    assert len(manager._personas) == len(DEFAULT_PERSONAS)
+    assert manager._personas[0].name == DEFAULT_PERSONAS[0]["name"]

@@ -4,6 +4,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -51,7 +52,9 @@ async def init_session(
 
     # Load survey + questions
     survey_result = await db.execute(
-        select(Survey).where(Survey.id == participant.survey_id, Survey.is_active == True)  # noqa: E712
+        select(Survey)
+        .options(selectinload(Survey.questions))
+        .where(Survey.id == participant.survey_id, Survey.is_active == True)  # noqa: E712
     )
     survey: Survey | None = survey_result.scalar_one_or_none()
     if not survey:
@@ -83,14 +86,20 @@ async def init_session(
     await db.refresh(session)
 
     # Initialise state machine in Redis
-    redis = await get_redis()
-    sm = SurveyStateMachine(
-        session_id=session.id,
-        total_questions=total_questions,
-        current_state=SessionState.GREETING,
-        current_question_index=0,
-    )
-    await sm.save(redis)
+    try:
+        redis = await get_redis()
+        sm = SurveyStateMachine(
+            session_id=session.id,
+            total_questions=total_questions,
+            current_state=SessionState.GREETING,
+            current_question_index=0,
+        )
+        await sm.save(redis)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Session store unavailable; please retry.",
+        ) from exc
 
     # Create short-lived session token (JWT with session_id as subject)
     session_token = create_access_token(subject=str(session.id))

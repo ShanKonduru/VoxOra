@@ -59,12 +59,44 @@ def _load_blocklist(path: str) -> set[str]:
     }
 
 
+# Confusable-character map: visually similar Cyrillic/Greek/etc. → ASCII Latin.
+# Applied AFTER NFKD so composed characters are already decomposed.
+_CONFUSABLES: dict[int, str] = {
+    # Cyrillic lookalikes
+    0x0430: "a",  # а → a
+    0x0435: "e",  # е → e
+    0x0456: "i",  # і → i  (Ukrainian i)
+    0x0457: "i",  # ї → i
+    0x043E: "o",  # о → o
+    0x0440: "r",  # р → r
+    0x0441: "c",  # с → c
+    0x0445: "x",  # х → x
+    0x0443: "y",  # у → y
+    0x0410: "A",  # А → A
+    0x0415: "E",  # Е → E
+    0x0406: "I",  # І → I
+    0x041E: "O",  # О → O
+    0x0420: "R",  # Р → R
+    0x0421: "C",  # С → C
+    0x0425: "X",  # Х → X
+    # Greek lookalikes
+    0x03BF: "o",  # ο → o  (Greek small omicron)
+    0x03C1: "p",  # ρ → p  (Greek rho)
+    0x03B5: "e",  # ε → e  (Greek epsilon)
+    0x0391: "A",  # Α → A  (Greek capital alpha)
+    0x0395: "E",  # Ε → E  (Greek capital epsilon)
+    0x039F: "O",  # Ο → O  (Greek capital omicron)
+}
+_CONFUSABLES_TABLE = str.maketrans(_CONFUSABLES)
+
+
 def _normalize(text: str) -> str:
     """
     Normalize unicode to catch lookalike-character substitution attacks.
-    E.g., Cyrillic 'е' → Latin 'e'.
+    Applies NFKD decomposition followed by a confusable-character map that
+    transliterates Cyrillic/Greek visual lookalikes to their ASCII equivalents.
     """
-    return unicodedata.normalize("NFKD", text)
+    return unicodedata.normalize("NFKD", text).translate(_CONFUSABLES_TABLE)
 
 
 class InputSanitizer:

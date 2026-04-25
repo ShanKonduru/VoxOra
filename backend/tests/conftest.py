@@ -16,6 +16,16 @@ from app.models.participant import Participant
 from app.models.question import Question
 from app.models.survey import Survey
 from app.security.auth import hash_password, create_access_token
+import bcrypt as _bcrypt
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter() -> None:
+    """Reset in-memory rate-limit counters before every test to prevent carryover."""
+    try:
+        app.state.limiter._storage.reset()
+    except AttributeError:
+        pass
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
@@ -59,13 +69,14 @@ async def client(db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
 
 @pytest_asyncio.fixture
 async def sample_admin(db: AsyncSession) -> AdminUser:
+    # Use bcrypt directly to avoid passlib ↔ bcrypt-5.x incompatibility in tests.
     admin = AdminUser(
         username="testadmin",
-        hashed_password=hash_password("testpass123"),
+        hashed_password=_bcrypt.hashpw(b"testpass123", _bcrypt.gensalt()).decode(),
         is_active=True,
     )
     db.add(admin)
-    await db.commit()
+    await db.flush()
     await db.refresh(admin)
     return admin
 
@@ -94,7 +105,7 @@ async def sample_survey(db: AsyncSession, sample_admin: AdminUser) -> Survey:
         )
         db.add(question)
 
-    await db.commit()
+    await db.flush()
     await db.refresh(survey)
     return survey
 
@@ -110,6 +121,6 @@ async def sample_participant(db: AsyncSession, sample_survey: Survey) -> Partici
         invite_token=secrets.token_urlsafe(32),
     )
     db.add(participant)
-    await db.commit()
+    await db.flush()
     await db.refresh(participant)
     return participant

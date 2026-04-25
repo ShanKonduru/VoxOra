@@ -73,7 +73,7 @@ class PersonaManager:
             available = [
                 p for p in self._personas if p.name not in recent_persona_names[-3:]
             ]
-        if not available:
+        if not available:  # pragma: no cover  — filter guard, unreachable with ≥4 personas
             available = self._personas
         return random.choice(available)
 
